@@ -679,6 +679,89 @@ export default function AdminPanelPage() {
             </div>
           )}
 
+          {/* ALL REGISTERED USERS */}
+          {activeTab === "allusers" && (
+            <div className="space-y-6">
+              {/* System Users (authStore) */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  Usuários do Sistema ({allUsers.filter((u) => u.username.toLowerCase().includes(searchTerm.toLowerCase()) || (u.cpf || "").includes(searchTerm)).length})
+                </h3>
+                {allUsers
+                  .filter((u) => u.username.toLowerCase().includes(searchTerm.toLowerCase()) || (u.cpf || "").includes(searchTerm))
+                  .map((u) => (
+                  <div key={u.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-4">
+                      <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${
+                        u.role === "admin" ? "bg-primary/10" : u.role === "doctor" ? "bg-[hsl(200,70%,50%)]/10" : "bg-accent"
+                      }`}>
+                        <span className="text-lg font-bold text-primary">{u.username[0]?.toUpperCase()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground">{u.username}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                          {u.cpf && <span className="text-xs text-muted-foreground">CPF: {u.cpf}</span>}
+                          <span className="text-xs text-muted-foreground">ID: {u.id.slice(0, 8)}...</span>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium shrink-0 ${
+                        u.role === "admin" ? "bg-primary/10 text-primary" :
+                        u.role === "doctor" ? "bg-[hsl(200,70%,50%)]/10 text-[hsl(200,70%,50%)]" :
+                        "bg-accent text-muted-foreground"
+                      }`}>
+                        {u.role === "admin" ? "Administrador" : u.role === "doctor" ? "Médico" : "Recepcionista"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Patient Accounts (teleconsultaStore) */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Users className="h-4 w-4 text-[hsl(142,70%,45%)]" />
+                  Contas de Pacientes no Portal ({allPatientAccounts.filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.cpf.includes(searchTerm)).length})
+                </h3>
+                {allPatientAccounts
+                  .filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.cpf.includes(searchTerm))
+                  .length === 0 ? (
+                  <div className="bg-card rounded-2xl border border-border p-10 text-center">
+                    <Users className="h-14 w-14 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">Nenhuma conta de paciente registrada.</p>
+                  </div>
+                ) : (
+                  allPatientAccounts
+                    .filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.cpf.includes(searchTerm))
+                    .map((acc) => (
+                    <div key={acc.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-[hsl(142,70%,45%)]/10 flex items-center justify-center shrink-0">
+                          <span className="text-lg font-bold text-[hsl(142,70%,45%)]">{acc.name[0]?.toUpperCase()}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground">{acc.name}</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            <span className="text-xs text-muted-foreground">CPF: {acc.cpf}</span>
+                            {acc.email && <span className="text-xs text-muted-foreground">Email: {acc.email}</span>}
+                            {acc.phone && <span className="text-xs text-muted-foreground">Tel: {acc.phone}</span>}
+                            {acc.birthDate && <span className="text-xs text-muted-foreground">Nasc: {acc.birthDate}</span>}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Cadastrado em {format(new Date(acc.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          </p>
+                        </div>
+                        <span className="text-xs px-3 py-1 rounded-full font-medium shrink-0 bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,45%)]">
+                          Paciente
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           {/* SUPPORT & CHAT */}
           {activeTab === "support" && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
