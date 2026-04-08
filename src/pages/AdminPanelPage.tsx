@@ -284,7 +284,7 @@ export default function AdminPanelPage() {
             </h2>
             <p className="text-xs text-muted-foreground">Administrador Principal • Acesso Exclusivo</p>
           </div>
-          {["doctors", "patients", "registrations", "logs"].includes(activeTab) && (
+          {["doctors", "patients", "registrations", "allusers", "logs"].includes(activeTab) && (
             <div className="relative max-w-xs w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
