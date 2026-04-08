@@ -16,6 +16,8 @@ interface AuthStore {
   login: (identifier: string, password: string) => boolean;
   logout: () => void;
   changePassword: (username: string, oldPassword: string, newPassword: string) => boolean;
+  resetPassword: (identifier: string, newPassword: string) => boolean;
+  findUserByIdentifier: (identifier: string) => { id: string; username: string; cpf?: string; role: string } | null;
   addUser: (username: string, password: string, role: "admin" | "doctor" | "receptionist", cpf?: string) => boolean;
 }
 
@@ -81,6 +83,32 @@ export const useAuthStore = create<AuthStore>()(
         updated[idx] = { ...updated[idx], passwordHash: newHash };
         set({ users: updated });
         return true;
+      },
+
+      resetPassword: (identifier: string, newPassword: string) => {
+        const users = get().users;
+        const normalizedId = identifier.toLowerCase().trim();
+        const idx = users.findIndex(
+          (u) =>
+            u.username.toLowerCase() === normalizedId ||
+            (u.cpf && u.cpf.replace(/\D/g, "") === normalizedId.replace(/\D/g, ""))
+        );
+        if (idx === -1) return false;
+        const newHash = hashPasswordSync(newPassword);
+        const updated = [...users];
+        updated[idx] = { ...updated[idx], passwordHash: newHash };
+        set({ users: updated });
+        return true;
+      },
+
+      findUserByIdentifier: (identifier: string) => {
+        const users = get().users;
+        const normalizedId = identifier.toLowerCase().trim();
+        return users.find(
+          (u) =>
+            u.username.toLowerCase() === normalizedId ||
+            (u.cpf && u.cpf.replace(/\D/g, "") === normalizedId.replace(/\D/g, ""))
+        ) || null;
       },
 
       addUser: (username: string, password: string, role: "admin" | "doctor" | "receptionist", cpf?: string) => {
