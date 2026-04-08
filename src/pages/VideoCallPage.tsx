@@ -75,7 +75,16 @@ export default function VideoCallPage() {
     updateRoom(room.id, { status: "finalizada" });
     endCall();
     toast.success("Chamada encerrada.");
-    window.close();
+    // Try to close the tab (works if opened via window.open), otherwise redirect
+    try { window.close(); } catch {}
+    setTimeout(() => {
+      // If window.close didn't work, redirect based on role
+      if (senderRole === "doctor") {
+        window.location.href = "/teleconsulta";
+      } else {
+        window.location.href = "/portal-paciente";
+      }
+    }, 500);
   };
 
   // Identify modal
