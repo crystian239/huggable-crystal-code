@@ -172,11 +172,15 @@ export default function AdminPanelPage() {
     toast.success("Mensagem enviada!");
   };
 
+  const allUsers = users;
+  const allPatientAccounts = teleconsultaStore.patientAccounts;
+
   const tabs: { id: AdminTab; label: string; icon: typeof Shield; badge?: number }[] = [
     { id: "dashboard", label: "Dashboard", icon: BarChart3 },
     { id: "doctors", label: "Médicos", icon: Stethoscope, badge: totalDoctors },
     { id: "patients", label: "Pacientes", icon: Users, badge: totalPatients },
     { id: "registrations", label: "Cadastros", icon: UserPlus, badge: pendingCount },
+    { id: "allusers", label: "Todos Cadastrados", icon: Eye, badge: allUsers.length + allPatientAccounts.length },
     { id: "support", label: "Suporte", icon: Headphones, badge: openTickets },
     { id: "clinic", label: "Clínica", icon: Building2 },
     { id: "logs", label: "Atividades", icon: ClipboardList },
