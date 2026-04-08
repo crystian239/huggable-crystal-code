@@ -17,7 +17,7 @@ import {
   MessageCircle, Send, Building2
 } from "lucide-react";
 
-type AdminTab = "dashboard" | "doctors" | "patients" | "registrations" | "logs" | "support" | "clinic" | "settings";
+type AdminTab = "dashboard" | "doctors" | "patients" | "registrations" | "allusers" | "logs" | "support" | "clinic" | "settings";
 
 export default function AdminPanelPage() {
   const { user, isAuthenticated, logout, addUser, users } = useAuthStore();
