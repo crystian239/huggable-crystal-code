@@ -83,6 +83,32 @@ export const useAuthStore = create<AuthStore>()(
         return true;
       },
 
+      resetPassword: (identifier: string, newPassword: string) => {
+        const users = get().users;
+        const normalizedId = identifier.toLowerCase().trim();
+        const idx = users.findIndex(
+          (u) =>
+            u.username.toLowerCase() === normalizedId ||
+            (u.cpf && u.cpf.replace(/\D/g, "") === normalizedId.replace(/\D/g, ""))
+        );
+        if (idx === -1) return false;
+        const newHash = hashPasswordSync(newPassword);
+        const updated = [...users];
+        updated[idx] = { ...updated[idx], passwordHash: newHash };
+        set({ users: updated });
+        return true;
+      },
+
+      findUserByIdentifier: (identifier: string) => {
+        const users = get().users;
+        const normalizedId = identifier.toLowerCase().trim();
+        return users.find(
+          (u) =>
+            u.username.toLowerCase() === normalizedId ||
+            (u.cpf && u.cpf.replace(/\D/g, "") === normalizedId.replace(/\D/g, ""))
+        ) || null;
+      },
+
       addUser: (username: string, password: string, role: "admin" | "doctor" | "receptionist", cpf?: string) => {
         const users = get().users;
         if (users.some((u) => u.username.toLowerCase() === username.toLowerCase())) return false;
