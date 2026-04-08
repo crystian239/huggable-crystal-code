@@ -135,6 +135,11 @@ export const useTeleconsultaStore = create<TeleconsultaStore>()(
       },
       updatePatientAccount: (id, p) =>
         set((s) => ({ patientAccounts: s.patientAccounts.map((x) => (x.id === id ? { ...x, ...p } : x)) })),
+      removePatientAccount: (id) =>
+        set((s) => ({
+          patientAccounts: s.patientAccounts.filter((x) => x.id !== id),
+          patientMessages: s.patientMessages.filter((m) => m.patientAccountId !== id),
+        })),
 
       addPatientMessage: (m) => {
         const id = uid();
