@@ -410,13 +410,34 @@ export default function PatientPortalPage() {
   });
 
   const account = useMemo(() => loggedIn ? patientAccounts.find((a) => a.id === loggedIn) : null, [loggedIn, patientAccounts]);
-  const linkedPatient = useMemo(() => account ? patients.find((p) => p.id === account.patientId) : null, [account, patients]);
+  const linkedPatient = useMemo(() => {
+    if (!account) return null;
+
+    const accountCpf = account.cpf?.replace(/\D/g, "") || "";
+    const directMatch = account.patientId ? patients.find((p) => p.id === account.patientId) : null;
+
+    if (directMatch) {
+      const directMatchCpf = directMatch.cpf?.replace(/\D/g, "") || "";
+      if (!accountCpf || !directMatchCpf || directMatchCpf === accountCpf) {
+        return directMatch;
+      }
+    }
+
+    if (!accountCpf) return null;
+    return patients.find((p) => p.cpf?.replace(/\D/g, "") === accountCpf) || null;
+  }, [account, patients]);
+
+  useEffect(() => {
+    if (!account || !linkedPatient || account.patientId === linkedPatient.id) return;
+    updatePatientAccount(account.id, { patientId: linkedPatient.id });
+  }, [account, linkedPatient, updatePatientAccount]);
+
   useIncomingCallRingtone(linkedPatient?.id ?? null);
-  const myRooms = useMemo(() => account ? rooms.filter((r) => r.patientId === account.patientId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [], [account, rooms]);
+  const myRooms = useMemo(() => linkedPatient ? rooms.filter((r) => r.patientId === linkedPatient.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)) : [], [linkedPatient, rooms]);
   const myAppointments = useMemo(() => linkedPatient ? appointments.filter((a) => a.patientId === linkedPatient.id).sort((a, b) => a.date.localeCompare(b.date)) : [], [linkedPatient, appointments]);
   const myPayments = useMemo(() => linkedPatient ? payments.filter((p) => p.patientId === linkedPatient.id).sort((a, b) => b.date.localeCompare(a.date)) : [], [linkedPatient, payments]);
   const myActivities = useMemo(() => linkedPatient ? activities.filter((a) => a.patientId === linkedPatient.id).sort((a, b) => b.date.localeCompare(a.date)) : [], [linkedPatient, activities]);
-  const myMessages = useMemo(() => account ? patientMessages.filter((m) => m.patientAccountId === account.id || m.patientId === account.patientId).sort((a, b) => b.date.localeCompare(a.date)) : [], [account, patientMessages]);
+  const myMessages = useMemo(() => account ? patientMessages.filter((m) => m.patientAccountId === account.id || (linkedPatient ? m.patientId === linkedPatient.id : false)).sort((a, b) => b.date.localeCompare(a.date)) : [], [account, linkedPatient, patientMessages]);
 
   // Billing data for this patient
   const myCharges = useMemo(() => {
