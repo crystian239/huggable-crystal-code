@@ -6,7 +6,7 @@ import { useTeleconsultaStore } from "@/data/teleconsultaStore";
 import { useSupportStore } from "@/data/supportStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { maskPhone, maskCRP } from "@/lib/masks";
+import { maskPhone, maskCRP, maskCPF } from "@/lib/masks";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -38,6 +38,11 @@ export default function AdminPanelPage() {
   // Reject modal
   const [rejectModal, setRejectModal] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
+
+  // New patient form in registrations
+  const [showNewPatientForm, setShowNewPatientForm] = useState(false);
+  const [newPatientForm, setNewPatientForm] = useState({ name: "", cpf: "", phone: "", email: "", birthDate: "" });
+  const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
 
   // Chat with doctors
   const [chatDoctor, setChatDoctor] = useState<string | null>(null);
@@ -596,52 +601,108 @@ export default function AdminPanelPage() {
             </div>
           )}
 
-          {/* REGISTRATIONS */}
+          {/* REGISTRATIONS - All accounts + pending + add new */}
           {activeTab === "registrations" && (
             <div className="space-y-4">
-              <div className="flex gap-2 flex-wrap">
-                {["todos", "pendente", "aprovado", "rejeitado"].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setSearchTerm(f === "todos" ? "" : f)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      (f === "todos" && !searchTerm) || searchTerm === f
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-accent text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                ))}
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {teleconsultaStore.patientAccounts.length} conta(s) ativa(s) • {pendingRegistrations.filter((r) => r.status === "pendente").length} pendente(s)
+                </p>
+                <Button size="sm" onClick={() => { setShowNewPatientForm(true); setNewPatientForm({ name: "", cpf: "", phone: "", email: "", birthDate: "" }); }}>
+                  <Plus className="h-4 w-4 mr-1" /> Novo Cadastro
+                </Button>
               </div>
 
-              {teleconsultaStore.patientAccounts.length > 0 && pendingRegistrations.length === 0 && (
-                <div className="bg-accent/50 rounded-2xl p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">{teleconsultaStore.patientAccounts.length} conta(s) de paciente ativa(s) no portal.</p>
+              {/* New patient form */}
+              {showNewPatientForm && (
+                <div className="bg-card rounded-2xl border border-border p-6 space-y-4 animate-fade-in">
+                  <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+                    <UserPlus className="h-5 w-5 text-primary" /> Cadastrar Novo Paciente
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Nome completo *</label>
+                      <input value={newPatientForm.name} onChange={(e) => setNewPatientForm({ ...newPatientForm, name: e.target.value })} className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="Nome do paciente" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">CPF *</label>
+                      <input value={newPatientForm.cpf} onChange={(e) => setNewPatientForm({ ...newPatientForm, cpf: maskCPF(e.target.value) })} className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="000.000.000-00" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Telefone</label>
+                      <input value={newPatientForm.phone} onChange={(e) => setNewPatientForm({ ...newPatientForm, phone: maskPhone(e.target.value) })} className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="(00) 00000-0000" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Email</label>
+                      <input value={newPatientForm.email} onChange={(e) => setNewPatientForm({ ...newPatientForm, email: e.target.value })} className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="email@exemplo.com" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Data de Nascimento</label>
+                      <input type="date" value={newPatientForm.birthDate} onChange={(e) => setNewPatientForm({ ...newPatientForm, birthDate: e.target.value })} className="w-full border border-input bg-background rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => {
+                      if (!newPatientForm.name || !newPatientForm.cpf) {
+                        toast.error("Nome e CPF são obrigatórios.");
+                        return;
+                      }
+                      const cpfClean = newPatientForm.cpf.replace(/\D/g, "");
+                      if (cpfClean.length < 11) {
+                        toast.error("CPF inválido.");
+                        return;
+                      }
+                      if (teleconsultaStore.patientAccounts.some((a) => a.cpf.replace(/\D/g, "") === cpfClean)) {
+                        toast.error("Este CPF já possui cadastro.");
+                        return;
+                      }
+                      // Add to clinic patients
+                      const patientId = clinicStore.addPatient({
+                        name: newPatientForm.name,
+                        cpf: newPatientForm.cpf,
+                        phone: newPatientForm.phone,
+                        email: newPatientForm.email,
+                        birthDate: newPatientForm.birthDate,
+                        address: "",
+                        notes: "",
+                      });
+                      // Create portal access
+                      teleconsultaStore.registerPatient({
+                        patientId,
+                        name: newPatientForm.name,
+                        email: newPatientForm.email,
+                        phone: newPatientForm.phone,
+                        cpf: newPatientForm.cpf,
+                        birthDate: newPatientForm.birthDate,
+                        password: "123456789",
+                        avatar: "",
+                      });
+                      addLog({ action: "Paciente cadastrado", details: `${newPatientForm.name} (CPF: ${newPatientForm.cpf})`, performedBy: user!.username });
+                      toast.success(`${newPatientForm.name} cadastrado com acesso ao portal! Senha padrão: 123456789`);
+                      setShowNewPatientForm(false);
+                      setNewPatientForm({ name: "", cpf: "", phone: "", email: "", birthDate: "" });
+                    }}>
+                      <Save className="h-4 w-4 mr-1" /> Cadastrar
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowNewPatientForm(false)}>
+                      <XCircle className="h-4 w-4 mr-1" /> Cancelar
+                    </Button>
+                  </div>
                 </div>
               )}
 
-              <div className="space-y-3">
-                {filteredRegistrations.length === 0 && pendingRegistrations.length === 0 ? (
-                  <div className="bg-card rounded-2xl border border-border p-10 text-center">
-                    <UserPlus className="h-14 w-14 text-muted-foreground/20 mx-auto mb-3" />
-                    <p className="text-muted-foreground text-sm">Nenhum cadastro pendente.</p>
-                    <p className="text-xs text-muted-foreground mt-1">Os cadastros aparecerão aqui quando pacientes se registrarem no portal.</p>
-                  </div>
-                ) : (
-                  (searchTerm && ["pendente", "aprovado", "rejeitado"].includes(searchTerm)
-                    ? pendingRegistrations.filter((r) => r.status === searchTerm)
-                    : filteredRegistrations
-                  ).map((reg) => (
+              {/* Pending registrations */}
+              {pendingRegistrations.filter((r) => r.status === "pendente").length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-[hsl(40,90%,50%)]" />
+                    Pendentes ({pendingRegistrations.filter((r) => r.status === "pendente").length})
+                  </h3>
+                  {pendingRegistrations.filter((r) => r.status === "pendente").map((reg) => (
                     <div key={reg.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
                       <div className="flex items-start gap-4">
-                        <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${
-                          reg.status === "pendente" ? "bg-[hsl(40,90%,50%)]/10" :
-                          reg.status === "aprovado" ? "bg-[hsl(142,70%,45%)]/10" : "bg-destructive/10"
-                        }`}>
-                          {reg.status === "pendente" ? <UserPlus className="h-6 w-6 text-[hsl(40,90%,50%)]" /> :
-                           reg.status === "aprovado" ? <UserCheck className="h-6 w-6 text-[hsl(142,70%,45%)]" /> :
-                           <UserX className="h-6 w-6 text-destructive" />}
+                        <div className="h-12 w-12 rounded-full bg-[hsl(40,90%,50%)]/10 flex items-center justify-center shrink-0">
+                          <UserPlus className="h-6 w-6 text-[hsl(40,90%,50%)]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-foreground">{reg.name}</p>
@@ -649,33 +710,115 @@ export default function AdminPanelPage() {
                           <p className="text-xs text-muted-foreground">
                             Solicitado em {format(new Date(reg.requestedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                           </p>
-                          {reg.reviewNote && (
-                            <p className="text-xs text-muted-foreground mt-1 italic">📝 {reg.reviewNote}</p>
+                        </div>
+                        <div className="flex gap-2 shrink-0">
+                          <Button size="sm" onClick={() => handleApprove(reg.id, reg.name)} className="bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)]">
+                            <Check className="h-4 w-4 mr-1" /> Aprovar
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => setRejectModal(reg.id)}>
+                            <X className="h-4 w-4 mr-1" /> Rejeitar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* All active accounts */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-[hsl(142,70%,45%)]" />
+                  Contas com Acesso ({teleconsultaStore.patientAccounts.filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.cpf.includes(searchTerm)).length})
+                </h3>
+                {teleconsultaStore.patientAccounts.filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.cpf.includes(searchTerm)).length === 0 ? (
+                  <div className="bg-card rounded-2xl border border-border p-10 text-center">
+                    <Users className="h-14 w-14 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="text-muted-foreground text-sm">Nenhuma conta cadastrada.</p>
+                    <p className="text-xs text-muted-foreground mt-1">Clique em "Novo Cadastro" para adicionar.</p>
+                  </div>
+                ) : (
+                  teleconsultaStore.patientAccounts
+                    .filter((a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.cpf.includes(searchTerm))
+                    .map((acc) => (
+                    <div key={acc.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-[hsl(142,70%,45%)]/10 flex items-center justify-center shrink-0">
+                          <UserCheck className="h-6 w-6 text-[hsl(142,70%,45%)]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground">{acc.name}</p>
+                          <p className="text-sm text-muted-foreground">CPF: {acc.cpf} {acc.email && `• ${acc.email}`} {acc.phone && `• ${acc.phone}`}</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            {acc.birthDate && <span className="text-xs text-muted-foreground">Nasc: {acc.birthDate}</span>}
+                            <span className="text-xs text-muted-foreground">
+                              Cadastrado em {format(new Date(acc.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs px-3 py-1 rounded-full font-medium bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,45%)]">Ativo</span>
+                          {removeConfirm === acc.id ? (
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="destructive" onClick={() => {
+                                teleconsultaStore.removePatientAccount(acc.id);
+                                addLog({ action: "Acesso removido", details: `${acc.name} (CPF: ${acc.cpf})`, performedBy: user!.username });
+                                toast.success(`Acesso de ${acc.name} removido.`);
+                                setRemoveConfirm(null);
+                              }}>
+                                Confirmar
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setRemoveConfirm(null)}>
+                                Não
+                              </Button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setRemoveConfirm(acc.id)}
+                              className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
+                              title="Remover acesso"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           )}
                         </div>
-                        {reg.status === "pendente" && (
-                          <div className="flex gap-2 shrink-0">
-                            <Button size="sm" onClick={() => handleApprove(reg.id, reg.name)} className="bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)]">
-                              <Check className="h-4 w-4 mr-1" /> Aprovar
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => setRejectModal(reg.id)}>
-                              <X className="h-4 w-4 mr-1" /> Rejeitar
-                            </Button>
-                          </div>
-                        )}
-                        {reg.status !== "pendente" && (
-                          <span className={`text-xs px-3 py-1 rounded-full font-medium shrink-0 ${
-                            reg.status === "aprovado" ? "bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,45%)]" : "bg-destructive/10 text-destructive"
-                          }`}>
-                            {reg.status === "aprovado" ? "Aprovado" : "Rejeitado"}
-                            {reg.reviewedAt && ` • ${format(new Date(reg.reviewedAt), "dd/MM", { locale: ptBR })}`}
-                          </span>
-                        )}
                       </div>
                     </div>
                   ))
                 )}
               </div>
+
+              {/* Past registrations (approved/rejected) */}
+              {pendingRegistrations.filter((r) => r.status !== "pendente").length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                    Histórico de Solicitações ({pendingRegistrations.filter((r) => r.status !== "pendente").length})
+                  </h3>
+                  {pendingRegistrations.filter((r) => r.status !== "pendente").map((reg) => (
+                    <div key={reg.id} className="bg-card rounded-2xl border border-border p-5 opacity-75">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${
+                          reg.status === "aprovado" ? "bg-[hsl(142,70%,45%)]/10" : "bg-destructive/10"
+                        }`}>
+                          {reg.status === "aprovado" ? <UserCheck className="h-6 w-6 text-[hsl(142,70%,45%)]" /> : <UserX className="h-6 w-6 text-destructive" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground">{reg.name}</p>
+                          <p className="text-sm text-muted-foreground">CPF: {reg.cpf} • {reg.email}</p>
+                          {reg.reviewNote && <p className="text-xs text-muted-foreground mt-1 italic">📝 {reg.reviewNote}</p>}
+                        </div>
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium shrink-0 ${
+                          reg.status === "aprovado" ? "bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,45%)]" : "bg-destructive/10 text-destructive"
+                        }`}>
+                          {reg.status === "aprovado" ? "Aprovado" : "Rejeitado"}
+                          {reg.reviewedAt && ` • ${format(new Date(reg.reviewedAt), "dd/MM", { locale: ptBR })}`}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
