@@ -6,7 +6,7 @@ import { useTeleconsultaStore } from "@/data/teleconsultaStore";
 import { useSupportStore } from "@/data/supportStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { maskPhone, maskCRP } from "@/lib/masks";
+import { maskPhone, maskCRP, maskCPF } from "@/lib/masks";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
