@@ -79,6 +79,7 @@ interface TeleconsultaStore {
   getPatientByEmail: (email: string) => PatientAccount | undefined;
   getPatientByCpf: (cpf: string) => PatientAccount | undefined;
   updatePatientAccount: (id: string, p: Partial<PatientAccount>) => void;
+  removePatientAccount: (id: string) => void;
 
   addPatientMessage: (m: Omit<PatientMessage, "id">) => string;
   markPatientMessageRead: (id: string) => void;
