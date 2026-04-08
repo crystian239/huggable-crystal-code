@@ -39,6 +39,11 @@ export default function AdminPanelPage() {
   const [rejectModal, setRejectModal] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
 
+  // New patient form in registrations
+  const [showNewPatientForm, setShowNewPatientForm] = useState(false);
+  const [newPatientForm, setNewPatientForm] = useState({ name: "", cpf: "", phone: "", email: "", birthDate: "" });
+  const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
+
   // Chat with doctors
   const [chatDoctor, setChatDoctor] = useState<string | null>(null);
   const [chatMessage, setChatMessage] = useState("");
