@@ -96,6 +96,7 @@ function App() {
           <Route path="/avisos" element={<ProtectedRoute><AvisosPage /></ProtectedRoute>} />
           <Route path="/tutorial" element={<ProtectedRoute><TutorialPage /></ProtectedRoute>} />
           <Route path="/chat-admin" element={<ProtectedRoute><ChatAdminPage /></ProtectedRoute>} />
+          <Route path="/live" element={<ProtectedRoute><LivePage /></ProtectedRoute>} />
           <Route path="/portal-paciente" element={<PatientPortalPage />} />
           <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
           <Route path="/admin/medicos" element={<ProtectedRoute><AdminMedicosPage /></ProtectedRoute>} />

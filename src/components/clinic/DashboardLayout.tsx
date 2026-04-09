@@ -10,6 +10,7 @@ import { useClinicStore } from "@/data/clinicStore";
 import { useAuthStore, SUPER_ADMIN_CPF } from "@/data/authStore";
 import { useTeleconsultaStore } from "@/data/teleconsultaStore";
 import { useSupportStore } from "@/data/supportStore";
+import { useLiveStore } from "@/data/liveStore";
 import { useNotificationSounds } from "@/hooks/useNotificationSounds";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
