@@ -35,6 +35,7 @@ import AdminClinicaPage from "./pages/admin/AdminClinicaPage";
 import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
 import ChatAdminPage from "./pages/ChatAdminPage";
+import LivePage from "./pages/LivePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
