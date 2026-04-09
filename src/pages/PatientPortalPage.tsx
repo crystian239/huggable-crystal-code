@@ -1355,13 +1355,6 @@ export default function PatientPortalPage() {
   }
 
   // === TABS ===
-  const liveNotifCount = useMemo(() => {
-    const unread = liveNotifications_top.filter((n) => n.targetType === "patients" && !n.read).length;
-    return hasActiveLiveForPatients_top ? unread + 1 : unread;
-  }, [liveNotifications_top, hasActiveLiveForPatients_top]);
-
-  const [liveChatMsg, setLiveChatMsg] = useState("");
-
   const tabs: { id: PortalTab; label: string; icon: React.ReactNode; badge?: number; pulse?: boolean }[] = [
     { id: "inicio", label: "Início", icon: <Home className="h-4 w-4" /> },
     { id: "consultas", label: "Consultas", icon: <Calendar className="h-4 w-4" />, badge: myAppointments.filter(a => a.status === "agendado").length },
@@ -1369,7 +1362,7 @@ export default function PatientPortalPage() {
     { id: "financeiro", label: "Financeiro", icon: <DollarSign className="h-4 w-4" />, badge: pendingCharges.length + pendingPayments.length },
     { id: "mensagens", label: "Mensagens", icon: <MessageCircle className="h-4 w-4" />, badge: unreadMessages },
     { id: "avisos", label: "Avisos", icon: <Megaphone className="h-4 w-4" />, badge: unreadAnnouncements },
-    { id: "live", label: "Live", icon: <Radio className="h-4 w-4" />, badge: liveNotifCount, pulse: hasActiveLiveForPatients_top },
+    { id: "live", label: "Live", icon: <Radio className="h-4 w-4" />, badge: liveNotifCount_top, pulse: hasActiveLiveForPatients_top },
     { id: "tutorial", label: "Tutorial", icon: <BookOpen className="h-4 w-4" /> },
     { id: "perfil", label: "Perfil", icon: <User className="h-4 w-4" /> },
   ];
