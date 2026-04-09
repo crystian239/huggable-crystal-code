@@ -189,6 +189,27 @@ export default function VideoCallPage() {
         <div className="flex-1 flex flex-col">
           {/* Jitsi iframe */}
           <div className="flex-1 relative bg-[hsl(222,47%,6%)]">
+            {/* Screen share overlay */}
+            {screenSharing && (
+              <div className="absolute inset-0 z-10 flex flex-col">
+                <div className="bg-blue-600/90 text-white text-xs font-medium px-3 py-1.5 flex items-center justify-between z-20">
+                  <span className="flex items-center gap-2">
+                    <Monitor className="h-3.5 w-3.5" />
+                    Compartilhando sua tela
+                  </span>
+                  <button onClick={handleStopScreenShare} className="bg-white/20 hover:bg-white/30 rounded px-2 py-0.5 text-xs transition-colors">
+                    Parar
+                  </button>
+                </div>
+                <video
+                  ref={screenVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="flex-1 w-full object-contain bg-black"
+                />
+              </div>
+            )}
             <iframe
               src={`https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=${!micOn}&config.startWithVideoMuted=${!videoOn}&interfaceConfig.TOOLBAR_BUTTONS=[]&interfaceConfig.FILM_STRIP_MAX_HEIGHT=0`}
               allow="camera; microphone; fullscreen; display-capture; autoplay"
