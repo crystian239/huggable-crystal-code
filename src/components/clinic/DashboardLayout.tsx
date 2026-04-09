@@ -284,6 +284,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                       <p className="text-sm text-foreground">{unreadSupportCount} msg no suporte</p>
                     </Link>
                   )}
+                  {unreadAdminChatCount > 0 && (
+                    <Link to="/chat-admin" onClick={() => setShowNotif(false)} className="p-3 flex items-center gap-3 hover:bg-accent/50 transition-colors">
+                      <Shield className="h-4 w-4 text-primary shrink-0" />
+                      <p className="text-sm text-foreground">{unreadAdminChatCount} msg do administrador</p>
+                    </Link>
+                  )}
                   {totalNotifs === 0 && (
                     <p className="p-4 text-sm text-muted-foreground text-center">✨ Tudo em ordem por aqui!</p>
                   )}
