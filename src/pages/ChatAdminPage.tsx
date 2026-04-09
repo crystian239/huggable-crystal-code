@@ -16,6 +16,7 @@ export default function ChatAdminPage() {
   const currentUser = useAuthStore((s) => s.user);
   const messages = useClinicStore((s) => s.messages);
   const addMessage = useClinicStore((s) => s.addMessage);
+  const markMessageRead = useClinicStore((s) => s.markMessageRead);
   const doctors = useAdminStore((s) => s.doctors);
   const [msgContent, setMsgContent] = useState("");
   const [msgImage, setMsgImage] = useState<{ url: string; name: string } | null>(null);
