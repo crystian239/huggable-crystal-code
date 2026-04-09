@@ -36,6 +36,7 @@ import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
 import ChatAdminPage from "./pages/ChatAdminPage";
 import LivePage from "./pages/LivePage";
+import GaleriaPage from "./pages/GaleriaPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
