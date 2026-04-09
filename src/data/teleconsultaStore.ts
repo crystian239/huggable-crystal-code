@@ -35,6 +35,7 @@ export interface PatientAccount {
   password: string;
   avatar: string;
   createdAt: string;
+  status?: "ativo" | "inativo";
 }
 
 export interface PatientMessage {

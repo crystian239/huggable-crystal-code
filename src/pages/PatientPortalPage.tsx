@@ -541,6 +541,10 @@ export default function PatientPortalPage() {
       toast.error(`CPF ou senha incorretos. ${rateCheck.remainingAttempts} tentativa(s) restante(s).`);
       return;
     }
+    if (acc.status === "inativo") {
+      toast.error("Sua conta está desativada. Entre em contato com a clínica.");
+      return;
+    }
     resetRateLimit(`patient-login-${cleanCpf}`);
     sessionStorage.setItem("patient-auth", acc.id);
     localStorage.removeItem("patient-auth");
