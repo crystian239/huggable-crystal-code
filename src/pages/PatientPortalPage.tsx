@@ -495,6 +495,11 @@ export default function PatientPortalPage() {
   const liveAddChatMessage = useLiveStore((s) => s.addChatMessage);
   const liveMarkAllRead = useLiveStore((s) => s.markAllNotificationsRead);
   const hasActiveLiveForPatients_top = useMemo(() => liveSessions_top.some((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes"), [liveSessions_top]);
+  const liveNotifCount_top = useMemo(() => {
+    const unread = liveNotifications_top.filter((n) => n.targetType === "patients" && !n.read).length;
+    return hasActiveLiveForPatients_top ? unread + 1 : unread;
+  }, [liveNotifications_top, hasActiveLiveForPatients_top]);
+  const [liveChatMsg_top, setLiveChatMsg_top] = useState("");
 
   // Set patient online presence
   const { setOnline: setPresenceOnline, setOffline: setPresenceOffline, getPresence: getChatPresence } = useChatPresenceStore();
