@@ -18,6 +18,9 @@ export function SeedTestData() {
   const patients = useClinicStore((s) => s.patients);
   const registerPatient = useTeleconsultaStore((s) => s.registerPatient);
   const createRoom = useTeleconsultaStore((s) => s.createRoom);
+  const addDoctor = useAdminStore((s) => s.addDoctor);
+  const doctors = useAdminStore((s) => s.doctors);
+  const addUser = useAuthStore((s) => s.addUser);
 
   const handleSeed = () => {
     // Settings
