@@ -1,9 +1,15 @@
 /**
  * Proteção contra DevTools, inspeção de código e cópia de conteúdo.
  * Dificulta (não impede 100%) acesso ao código-fonte via navegador.
+ * 
+ * IMPORTANTE: Nenhuma proteção deve destruir o DOM (innerHTML = ""),
+ * pois causa tela branca irrecuperável. Em vez disso, usamos redirecionamento.
  */
 
 export function enableDevToolsProtection() {
+  // Não executar dentro de iframes (preview do Lovable, etc.)
+  if (window.self !== window.top) return;
+
   // 1. Bloquear clique direito
   document.addEventListener("contextmenu", (e) => {
     e.preventDefault();
@@ -12,31 +18,22 @@ export function enableDevToolsProtection() {
 
   // 2. Bloquear atalhos de teclado do DevTools e View Source
   document.addEventListener("keydown", (e) => {
-    // F12
     if (e.key === "F12") {
       e.preventDefault();
       return false;
     }
-
-    // Ctrl+Shift+I (Inspect), Ctrl+Shift+J (Console), Ctrl+Shift+C (Element picker)
     if (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(e.key.toUpperCase())) {
       e.preventDefault();
       return false;
     }
-
-    // Ctrl+U (View Source)
     if (e.ctrlKey && e.key.toUpperCase() === "U") {
       e.preventDefault();
       return false;
     }
-
-    // Ctrl+S (Save page)
     if (e.ctrlKey && e.key.toUpperCase() === "S") {
       e.preventDefault();
       return false;
     }
-
-    // Ctrl+P (Print)
     if (e.ctrlKey && e.key.toUpperCase() === "P") {
       e.preventDefault();
       return false;
@@ -51,7 +48,6 @@ export function enableDevToolsProtection() {
 
   // 4. Bloquear seleção de texto (dificulta copiar)
   document.addEventListener("selectstart", (e) => {
-    // Permitir seleção em inputs e textareas
     const target = e.target as HTMLElement;
     if (
       target.tagName === "INPUT" ||
@@ -78,27 +74,7 @@ export function enableDevToolsProtection() {
     return false;
   });
 
-  // 6. Detectar DevTools aberto via debugger trick
-  // DevTools size detection disabled — too many false positives in iframes/embeds
-
-  // 7. Anti-debugger (dificulta uso do console)
-  const antiDebug = () => {
-    const start = performance.now();
-    // eslint-disable-next-line no-debugger
-    debugger;
-    const end = performance.now();
-    if (end - start > 100) {
-      document.body.innerHTML = "";
-      document.title = "⚠️ Acesso não autorizado";
-    }
-  };
-
-  // Run anti-debug in production only
-  if (import.meta.env.PROD) {
-    setInterval(antiDebug, 3000);
-  }
-
-  // 8. Console warning
+  // 6. Console warning (seguro, apenas informativo)
   console.log(
     "%c⚠️ ATENÇÃO!",
     "color: red; font-size: 40px; font-weight: bold;"
