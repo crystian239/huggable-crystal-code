@@ -147,6 +147,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             const badge = item.path === "/mensagens" ? totalMsgBadge
               : item.path === "/suporte" ? unreadSupportCount
               : item.path === "/aniversarios" ? todayBirthdays.length
+              : item.path === "/chat-admin" ? unreadAdminChatCount
               : 0;
             const hasActiveLive = item.path === "/live" && useLiveStore.getState().sessions.some((s) => s.status === "ao_vivo");
             return (
