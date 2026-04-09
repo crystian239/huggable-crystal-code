@@ -206,7 +206,7 @@ export const useClinicStore = create<ClinicStore>()(
         logo: "",
         phone: "(00) 00000-0000",
         email: "contato@clinica.com",
-        address: "Rua Exemplo, 123",
+        address: "Taguatinga Shopping, Sala 204 - Brasília/DF",
         cnpj: "",
         crp: "",
         doctorName: "Dra. Nome",
