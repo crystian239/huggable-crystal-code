@@ -79,19 +79,7 @@ export function enableDevToolsProtection() {
   });
 
   // 6. Detectar DevTools aberto via debugger trick
-  const detectDevTools = () => {
-    const threshold = 160;
-    const widthDiff = window.outerWidth - window.innerWidth;
-    const heightDiff = window.outerHeight - window.innerHeight;
-
-    if (widthDiff > threshold || heightDiff > threshold) {
-      document.body.innerHTML = "";
-      document.title = "⚠️ Acesso não autorizado";
-    }
-  };
-
-  // Check periodically
-  setInterval(detectDevTools, 2000);
+  // DevTools size detection disabled — too many false positives in iframes/embeds
 
   // 7. Anti-debugger (dificulta uso do console)
   const antiDebug = () => {
