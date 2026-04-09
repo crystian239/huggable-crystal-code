@@ -500,6 +500,7 @@ export default function PatientPortalPage() {
     return hasActiveLiveForPatients_top ? unread + 1 : unread;
   }, [liveNotifications_top, hasActiveLiveForPatients_top]);
   const [liveChatMsg_top, setLiveChatMsg_top] = useState("");
+  const [expandedLiveId, setExpandedLiveId] = useState<string | null>(null);
 
   // Set patient online presence
   const { setOnline: setPresenceOnline, setOffline: setPresenceOffline, getPresence: getChatPresence } = useChatPresenceStore();
