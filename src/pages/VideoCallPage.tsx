@@ -2,19 +2,39 @@ import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useTeleconsultaStore } from "@/data/teleconsultaStore";
 import { useClinicStore } from "@/data/clinicStore";
+import { useAuthStore } from "@/data/authStore";
 import { Send, Paperclip, Image, X, Video, VideoOff, Mic, MicOff, PhoneOff, MessageCircle, Users, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
 export default function VideoCallPage() {
   const { roomName } = useParams<{ roomName: string }>();
-  const { rooms, chatMessages, addChatMessage, updateRoom, endCall } = useTeleconsultaStore();
+  const { rooms, chatMessages, addChatMessage, updateRoom, endCall, patientAccounts } = useTeleconsultaStore();
   const patients = useClinicStore((s) => s.patients);
   const settings = useClinicStore((s) => s.settings);
+  const authUser = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const room = useMemo(() => rooms.find((r) => r.roomName === roomName), [rooms, roomName]);
   const messages = useMemo(() => chatMessages.filter((m) => m.roomId === room?.id).sort((a, b) => a.timestamp.localeCompare(b.timestamp)), [chatMessages, room?.id]);
   const patient = useMemo(() => room ? patients.find((p) => p.id === room.patientId) : null, [room, patients]);
+
+  // Auto-detect user identity
+  const detectedIdentity = useMemo(() => {
+    // Check if logged in as doctor/admin via authStore
+    if (isAuthenticated && authUser) {
+      return { name: authUser.username, role: "doctor" as const };
+    }
+    // Check if logged in as patient via sessionStorage
+    const patientAuthId = sessionStorage.getItem("patient-auth");
+    if (patientAuthId) {
+      const acc = patientAccounts.find((a) => a.id === patientAuthId);
+      if (acc) {
+        return { name: acc.name, role: "patient" as const };
+      }
+    }
+    return null;
+  }, [isAuthenticated, authUser, patientAccounts]);
 
   const [chatOpen, setChatOpen] = useState(true);
   const [messageText, setMessageText] = useState("");
@@ -22,11 +42,19 @@ export default function VideoCallPage() {
   const [senderRole, setSenderRole] = useState<"doctor" | "patient">("doctor");
   const [videoOn, setVideoOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
-  const [showIdentify, setShowIdentify] = useState(true);
+  const [entered, setEntered] = useState(false);
   const [screenSharing, setScreenSharing] = useState(false);
   const screenVideoRef = useRef<HTMLVideoElement>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-set identity when detected
+  useEffect(() => {
+    if (detectedIdentity && !entered) {
+      setSenderName(detectedIdentity.name);
+      setSenderRole(detectedIdentity.role);
+    }
+  }, [detectedIdentity, entered]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
