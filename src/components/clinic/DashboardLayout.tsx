@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Calendar, DollarSign, FileText, Settings, LogOut, Menu, X,
-  ClipboardList, MessageCircle, Cake, Bell, Video, Headphones, FileCheck, ListChecks, Receipt, Megaphone, Sparkles, BookOpen,
+  ClipboardList, MessageCircle, Cake, Bell, Video, Headphones, FileCheck, ListChecks, Receipt, Megaphone, Sparkles, BookOpen, Radio,
   Shield, Stethoscope, UserPlus, Building2
 } from "lucide-react";
 import clinicLogo from "@/assets/clinic-logo.png";
@@ -10,6 +10,7 @@ import { useClinicStore } from "@/data/clinicStore";
 import { useAuthStore, SUPER_ADMIN_CPF } from "@/data/authStore";
 import { useTeleconsultaStore } from "@/data/teleconsultaStore";
 import { useSupportStore } from "@/data/supportStore";
+import { useLiveStore } from "@/data/liveStore";
 import { useNotificationSounds } from "@/hooks/useNotificationSounds";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +25,7 @@ const clinicNavItems = [
   { label: "Mensagens", path: "/mensagens", icon: MessageCircle },
   { label: "Suporte Pacientes", path: "/suporte", icon: Headphones },
   { label: "Teleconsulta", path: "/teleconsulta", icon: Video },
+  { label: "Live", path: "/live", icon: Radio },
   { label: "Atestados", path: "/atestados", icon: FileCheck },
   { label: "Atividades", path: "/atividades", icon: ListChecks },
   { label: "Notas Fiscais", path: "/notas-fiscais", icon: Receipt },
@@ -143,6 +145,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               : item.path === "/suporte" ? unreadSupportCount
               : item.path === "/aniversarios" ? todayBirthdays.length
               : 0;
+            const hasActiveLive = item.path === "/live" && useLiveStore.getState().sessions.some((s) => s.status === "ao_vivo");
             return (
               <Link
                 key={item.path}
@@ -154,8 +157,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 }`}
               >
-                <item.icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? "" : "group-hover:scale-110"}`} />
+                <div className="relative shrink-0">
+                  <item.icon className={`h-4 w-4 transition-transform duration-200 ${active ? "" : "group-hover:scale-110"}`} />
+                  {hasActiveLive && (
+                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-ping" />
+                  )}
+                </div>
                 <span className="flex-1 relative z-10">{item.label}</span>
+                {hasActiveLive && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground font-bold">LIVE</span>
+                )}
                 {badge > 0 && (
                   <span className="bg-warning text-warning-foreground text-xs rounded-full h-5 min-w-[1.25rem] flex items-center justify-center px-1 font-semibold">{badge}</span>
                 )}

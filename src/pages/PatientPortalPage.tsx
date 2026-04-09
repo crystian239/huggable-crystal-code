@@ -4,6 +4,7 @@ import { useClinicStore } from "@/data/clinicStore";
 import { useBillingStore } from "@/data/billingStore";
 import { useAuthStore } from "@/data/authStore";
 import { useSupportStore } from "@/data/supportStore";
+import { useLiveStore } from "@/data/liveStore";
 import SupportChatWidget from "@/components/SupportChatWidget";
 import EmojiPicker from "@/components/EmojiPicker";
 import IncomingCallOverlay from "@/components/IncomingCallOverlay";
@@ -19,7 +20,7 @@ import { useIncomingCallRingtone } from "@/hooks/useIncomingCallRingtone";
 import { useChatPresenceStore } from "@/data/chatPresenceStore";
 import { PresenceDot, PresenceLabel } from "@/components/PresenceIndicator";
 import {
-  Video, LogOut, LogIn, Calendar, MessageCircle, User, Phone, Clock,
+  Video, LogOut, LogIn, Calendar, MessageCircle, User, Phone, Clock, Radio,
   CreditCard, FileText, Send, Home, DollarSign, CheckCircle2,
   AlertCircle, ChevronRight, Camera, X, Paperclip, Check, XCircle, MapPin, Navigation,
   ListChecks, Link as LinkIcon, Image, ExternalLink, Eye, EyeOff, Megaphone, Download, Bell, BookOpen, ChevronDown, Sparkles, Shield, Instagram, Smartphone
@@ -29,7 +30,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type PortalTab = "inicio" | "consultas" | "atividades" | "financeiro" | "mensagens" | "avisos" | "tutorial" | "perfil";
+type PortalTab = "inicio" | "consultas" | "atividades" | "financeiro" | "mensagens" | "avisos" | "live" | "tutorial" | "perfil";
 
 function ChangePasswordSection({ accountId, currentPassword }: { accountId: string; currentPassword: string }) {
   const updatePatientAccount = useTeleconsultaStore((s) => s.updatePatientAccount);
@@ -487,6 +488,18 @@ export default function PatientPortalPage() {
 
   const unreadMessages = unreadDoctorMessages + unreadSupportMessages;
   const unreadAnnouncements = useMemo(() => account ? patientAnnouncements.filter((a) => !a.readBy.includes(account.id)).length : 0, [account, patientAnnouncements]);
+
+  // Live store hooks (must be before early returns)
+  const liveSessions_top = useLiveStore((s) => s.sessions);
+  const liveNotifications_top = useLiveStore((s) => s.notifications);
+  const liveAddChatMessage = useLiveStore((s) => s.addChatMessage);
+  const liveMarkAllRead = useLiveStore((s) => s.markAllNotificationsRead);
+  const hasActiveLiveForPatients_top = useMemo(() => liveSessions_top.some((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes"), [liveSessions_top]);
+  const liveNotifCount_top = useMemo(() => {
+    const unread = liveNotifications_top.filter((n) => n.targetType === "patients" && !n.read).length;
+    return hasActiveLiveForPatients_top ? unread + 1 : unread;
+  }, [liveNotifications_top, hasActiveLiveForPatients_top]);
+  const [liveChatMsg_top, setLiveChatMsg_top] = useState("");
 
   // Set patient online presence
   const { setOnline: setPresenceOnline, setOffline: setPresenceOffline, getPresence: getChatPresence } = useChatPresenceStore();
@@ -1342,13 +1355,14 @@ export default function PatientPortalPage() {
   }
 
   // === TABS ===
-  const tabs: { id: PortalTab; label: string; icon: React.ReactNode; badge?: number }[] = [
+  const tabs: { id: PortalTab; label: string; icon: React.ReactNode; badge?: number; pulse?: boolean }[] = [
     { id: "inicio", label: "Início", icon: <Home className="h-4 w-4" /> },
     { id: "consultas", label: "Consultas", icon: <Calendar className="h-4 w-4" />, badge: myAppointments.filter(a => a.status === "agendado").length },
     { id: "atividades", label: "Atividades", icon: <ListChecks className="h-4 w-4" />, badge: myActivities.filter(a => !a.completed).length },
     { id: "financeiro", label: "Financeiro", icon: <DollarSign className="h-4 w-4" />, badge: pendingCharges.length + pendingPayments.length },
     { id: "mensagens", label: "Mensagens", icon: <MessageCircle className="h-4 w-4" />, badge: unreadMessages },
     { id: "avisos", label: "Avisos", icon: <Megaphone className="h-4 w-4" />, badge: unreadAnnouncements },
+    { id: "live", label: "Live", icon: <Radio className="h-4 w-4" />, badge: liveNotifCount_top, pulse: hasActiveLiveForPatients_top },
     { id: "tutorial", label: "Tutorial", icon: <BookOpen className="h-4 w-4" /> },
     { id: "perfil", label: "Perfil", icon: <User className="h-4 w-4" /> },
   ];
@@ -1406,6 +1420,9 @@ export default function PatientPortalPage() {
                     : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50"
                 }`}
               >
+                {tab.pulse && (
+                  <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-destructive rounded-full animate-ping" />
+                )}
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
                 {tab.badge && tab.badge > 0 ? (
@@ -2532,6 +2549,144 @@ export default function PatientPortalPage() {
 
             {/* Nota Fiscal */}
             {account && <InvoiceDataSection patientId={linkedPatient?.id || account.id} />}
+          </>
+        )}
+
+        {/* === LIVE === */}
+        {activeTab === "live" && (
+          <>
+            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <Radio className="h-5 w-5 text-primary" /> Lives
+            </h2>
+
+            {/* Active lives */}
+            {liveSessions_top.filter((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes").map((live) => (
+              <div key={live.id} className="bg-card border-2 border-destructive/30 rounded-2xl overflow-hidden">
+                <div className="p-4 flex items-center gap-4">
+                  <div className="relative">
+                    <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center">
+                      <Radio className="h-6 w-6 text-destructive" />
+                    </div>
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-ping" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-foreground">{live.title}</p>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground font-bold">AO VIVO</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{live.doctorName}</p>
+                  </div>
+                </div>
+                {/* Video placeholder */}
+                <div className="bg-foreground/95 aspect-video flex items-center justify-center">
+                  <div className="text-center text-primary-foreground/80">
+                    <Video className="h-12 w-12 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Transmissão ao vivo</p>
+                  </div>
+                  <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive/90 text-destructive-foreground px-3 py-1 rounded-full text-xs font-bold">
+                    <span className="h-2 w-2 bg-destructive-foreground rounded-full animate-pulse" />
+                    AO VIVO
+                  </div>
+                </div>
+                {/* Chat */}
+                <div className="border-t border-border/50">
+                  <div className="p-3 border-b border-border/50 flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Chat da Live</span>
+                  </div>
+                  <div className="h-48 overflow-y-auto p-3 space-y-2">
+                    {live.chatMessages.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-6">Nenhuma mensagem ainda...</p>
+                    )}
+                    {live.chatMessages.map((msg) => (
+                      <div key={msg.id} className={`flex ${msg.senderRole === "patient" && msg.senderName === account?.name ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[75%] px-3 py-2 rounded-xl text-sm ${
+                          msg.senderRole === "doctor"
+                            ? "bg-primary/10 text-foreground"
+                            : msg.senderName === account?.name
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-secondary-foreground"
+                        }`}>
+                          <p className="text-[10px] font-bold opacity-70">{msg.senderName} {msg.senderRole === "doctor" ? "🩺" : ""}</p>
+                          <p>{msg.message}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-3 border-t border-border/50 flex gap-2">
+                    <input
+                      value={liveChatMsg_top}
+                      onChange={(e) => setLiveChatMsg_top(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && liveChatMsg_top.trim() && account) {
+                          liveAddChatMessage(live.id, { liveId: live.id, senderName: account.name, senderRole: "patient", message: liveChatMsg_top.trim() });
+                          setLiveChatMsg_top("");
+                        }
+                      }}
+                      placeholder="Enviar mensagem..."
+                      className="flex-1 px-3 py-2 bg-background border border-input rounded-lg text-sm outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <Button size="sm" onClick={() => {
+                      if (liveChatMsg_top.trim() && account) {
+                        liveAddChatMessage(live.id, { liveId: live.id, senderName: account.name, senderRole: "patient", message: liveChatMsg_top.trim() });
+                        setLiveChatMsg_top("");
+                      }
+                    }}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Scheduled lives */}
+            {liveSessions_top.filter((s) => s.status === "agendada" && s.audience === "todos_pacientes").length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" /> Lives Agendadas
+                </h3>
+                {liveSessions_top.filter((s) => s.status === "agendada" && s.audience === "todos_pacientes").map((live) => (
+                  <div key={live.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{live.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {live.doctorName} • {live.scheduledAt && format(new Date(live.scheduledAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </p>
+                      {live.description && <p className="text-xs text-muted-foreground mt-1">{live.description}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Notifications */}
+            {liveNotifications_top.filter((n) => n.targetType === "patients").length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">Notificações de Lives</h3>
+                  <button onClick={() => liveMarkAllRead("patients")} className="text-xs text-primary hover:underline">Marcar todas como lidas</button>
+                </div>
+                {liveNotifications_top.filter((n) => n.targetType === "patients").sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10).map((n) => (
+                  <div key={n.id} className={`rounded-xl p-3 flex items-center gap-3 text-sm ${n.read ? "bg-muted/50 opacity-60" : "bg-primary/5 border border-primary/20"}`}>
+                    <Radio className="h-4 w-4 text-primary shrink-0" />
+                    <p className="flex-1 text-foreground">{n.message}</p>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{format(new Date(n.date), "dd/MM HH:mm")}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Empty state */}
+            {!hasActiveLiveForPatients_top && liveSessions_top.filter((s) => s.status === "agendada" && s.audience === "todos_pacientes").length === 0 && liveNotifications_top.filter((n) => n.targetType === "patients").length === 0 && (
+              <div className="bg-card border border-border rounded-2xl p-12 text-center">
+                <Radio className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-muted-foreground font-medium">Nenhuma live no momento</p>
+                <p className="text-sm text-muted-foreground/70 mt-1">Você será notificado quando um profissional iniciar uma live</p>
+              </div>
+            )}
           </>
         )}
 

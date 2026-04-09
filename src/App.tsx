@@ -35,6 +35,7 @@ import AdminClinicaPage from "./pages/admin/AdminClinicaPage";
 import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import AdminUsuariosPage from "./pages/admin/AdminUsuariosPage";
 import ChatAdminPage from "./pages/ChatAdminPage";
+import LivePage from "./pages/LivePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ function App() {
           <Route path="/avisos" element={<ProtectedRoute><AvisosPage /></ProtectedRoute>} />
           <Route path="/tutorial" element={<ProtectedRoute><TutorialPage /></ProtectedRoute>} />
           <Route path="/chat-admin" element={<ProtectedRoute><ChatAdminPage /></ProtectedRoute>} />
+          <Route path="/live" element={<ProtectedRoute><LivePage /></ProtectedRoute>} />
           <Route path="/portal-paciente" element={<PatientPortalPage />} />
           <Route path="/admin" element={<ProtectedRoute><AdminPanelPage /></ProtectedRoute>} />
           <Route path="/admin/medicos" element={<ProtectedRoute><AdminMedicosPage /></ProtectedRoute>} />
