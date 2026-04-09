@@ -31,6 +31,7 @@ const clinicNavItems = [
   { label: "Notas Fiscais", path: "/notas-fiscais", icon: Receipt },
   { label: "Avisos Pacientes", path: "/avisos", icon: Megaphone },
   { label: "Aniversários", path: "/aniversarios", icon: Cake },
+  { label: "Galeria", path: "/galeria", icon: Image },
   { label: "Tutorial", path: "/tutorial", icon: BookOpen },
 ];
 
