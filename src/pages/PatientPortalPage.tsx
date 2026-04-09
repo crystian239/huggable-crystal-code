@@ -4,6 +4,7 @@ import { useClinicStore } from "@/data/clinicStore";
 import { useBillingStore } from "@/data/billingStore";
 import { useAuthStore } from "@/data/authStore";
 import { useSupportStore } from "@/data/supportStore";
+import { useLiveStore } from "@/data/liveStore";
 import SupportChatWidget from "@/components/SupportChatWidget";
 import EmojiPicker from "@/components/EmojiPicker";
 import IncomingCallOverlay from "@/components/IncomingCallOverlay";
