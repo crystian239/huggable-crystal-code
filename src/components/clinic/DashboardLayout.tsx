@@ -56,11 +56,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const settings = useClinicStore((s) => s.settings);
   const authUser = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const isSuperAdmin = authUser?.role === "admin" && authUser?.cpf === SUPER_ADMIN_CPF;
   const messages = useClinicStore((s) => s.messages);
   const patients = useClinicStore((s) => s.patients);
   const clinicNotifications = useClinicStore((s) => s.notifications);
   const markNotificationRead = useClinicStore((s) => s.markNotificationRead);
   const unreadCount = useMemo(() => messages.filter((m) => !m.read && m.to === "admin").length, [messages]);
+  const unreadAdminChatCount = useMemo(() => {
+    if (isSuperAdmin || !authUser?.username) return 0;
+    return messages.filter((m) => m.from === "admin" && m.to === authUser.username && !m.read).length;
+  }, [messages, authUser?.username, isSuperAdmin]);
   const patientMessages = useTeleconsultaStore((s) => s.patientMessages);
   const unreadPatientMsgCount = useMemo(() => patientMessages.filter((m) => m.sender === "patient" && !m.read).length, [patientMessages]);
   const supportTickets = useSupportStore((s) => s.tickets);
@@ -88,11 +94,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     });
   }, [patients]);
   const todayBirthdays = useMemo(() => birthdays.filter((b) => new Date(b.birthDate + "T00:00:00").getDate() === new Date().getDate()), [birthdays]);
-  const totalNotifs = unreadCount + todayBirthdays.length + unreadNotifCount + unreadPatientMsgCount + unreadSupportCount;
-
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const isSuperAdmin = user?.role === "admin" && user?.cpf === SUPER_ADMIN_CPF;
+  const totalNotifs = unreadCount + todayBirthdays.length + unreadNotifCount + unreadPatientMsgCount + unreadSupportCount + unreadAdminChatCount;
 
   // For doctors, add "Chat com Admin" item; for admin, add admin nav items
   const navItems = useMemo(() => {
@@ -145,6 +147,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             const badge = item.path === "/mensagens" ? totalMsgBadge
               : item.path === "/suporte" ? unreadSupportCount
               : item.path === "/aniversarios" ? todayBirthdays.length
+              : item.path === "/chat-admin" ? unreadAdminChatCount
               : 0;
             const hasActiveLive = item.path === "/live" && useLiveStore.getState().sessions.some((s) => s.status === "ao_vivo");
             return (
@@ -279,6 +282,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <Link to="/suporte" onClick={() => setShowNotif(false)} className="p-3 flex items-center gap-3 hover:bg-accent/50 transition-colors">
                       <Headphones className="h-4 w-4 text-warning shrink-0" />
                       <p className="text-sm text-foreground">{unreadSupportCount} msg no suporte</p>
+                    </Link>
+                  )}
+                  {unreadAdminChatCount > 0 && (
+                    <Link to="/chat-admin" onClick={() => setShowNotif(false)} className="p-3 flex items-center gap-3 hover:bg-accent/50 transition-colors">
+                      <Shield className="h-4 w-4 text-primary shrink-0" />
+                      <p className="text-sm text-foreground">{unreadAdminChatCount} msg do administrador</p>
                     </Link>
                   )}
                   {totalNotifs === 0 && (

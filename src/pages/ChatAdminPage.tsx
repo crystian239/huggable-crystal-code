@@ -16,6 +16,7 @@ export default function ChatAdminPage() {
   const currentUser = useAuthStore((s) => s.user);
   const messages = useClinicStore((s) => s.messages);
   const addMessage = useClinicStore((s) => s.addMessage);
+  const markMessageRead = useClinicStore((s) => s.markMessageRead);
   const doctors = useAdminStore((s) => s.doctors);
   const [msgContent, setMsgContent] = useState("");
   const [msgImage, setMsgImage] = useState<{ url: string; name: string } | null>(null);
@@ -46,9 +47,19 @@ export default function ChatAdminPage() {
     [messages, myUsername]
   );
 
+  // Auto-scroll
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [chatMessages.length]);
+
+  // Mark incoming messages as read
+  useEffect(() => {
+    chatMessages.forEach((msg) => {
+      if (msg.from === "admin" && !msg.read) {
+        markMessageRead(msg.id);
+      }
+    });
+  }, [chatMessages, markMessageRead]);
 
   const handleSend = () => {
     if (!msgContent.trim() && !msgFile && !msgImage) return;
