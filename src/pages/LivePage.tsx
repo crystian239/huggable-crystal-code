@@ -1,0 +1,484 @@
+import { useState, useMemo } from "react";
+import { DashboardLayout } from "@/components/clinic/DashboardLayout";
+import { useLiveStore } from "@/data/liveStore";
+import { useAuthStore } from "@/data/authStore";
+import { useClinicStore } from "@/data/clinicStore";
+import { Button } from "@/components/ui/button";
+import {
+  Radio, Video, Calendar, Clock, Users, Send, Trash2, Play, Square, Plus, X, MessageCircle, Sparkles
+} from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+export default function LivePage() {
+  const user = useAuthStore((s) => s.user);
+  const allUsers = useAuthStore((s) => s.users);
+  const settings = useClinicStore((s) => s.settings);
+  const {
+    sessions, notifications, createSession, startLive, endLive, deleteSession,
+    addChatMessage, markAllNotificationsRead, addNotification,
+  } = useLiveStore();
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [audience, setAudience] = useState<"todos_pacientes" | "todos_doutores" | "doutores_especificos">("todos_pacientes");
+  const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [chatMsg, setChatMsg] = useState("");
+  const [viewingLive, setViewingLive] = useState<string | null>(null);
+
+  const doctorName = user?.username || "Doutor";
+  const doctorId = user?.cpf || user?.id || "";
+
+  const doctors = useMemo(() => allUsers.filter((u) => u.role === "doctor" && u.id !== user?.id), [allUsers, user]);
+
+  const activeLives = useMemo(() => sessions.filter((s) => s.status === "ao_vivo"), [sessions]);
+  const scheduledLives = useMemo(() => sessions.filter((s) => s.status === "agendada").sort((a, b) => (a.scheduledAt || "").localeCompare(b.scheduledAt || "")), [sessions]);
+  const pastLives = useMemo(() => sessions.filter((s) => s.status === "encerrada").sort((a, b) => (b.endedAt || "").localeCompare(a.endedAt || "")), [sessions]);
+
+  const myDoctorNotifs = useMemo(() =>
+    notifications.filter((n) => n.targetType === "doctors" && !n.read && (!n.targetIds || n.targetIds.includes(doctorId))),
+    [notifications, doctorId]
+  );
+
+  const handleCreate = () => {
+    if (!title.trim()) { toast.error("Digite um título para a live."); return; }
+
+    const scheduledAt = isScheduled && scheduleDate && scheduleTime
+      ? new Date(`${scheduleDate}T${scheduleTime}`).toISOString()
+      : undefined;
+
+    const id = createSession({
+      doctorName,
+      doctorId,
+      title: title.trim(),
+      description: description.trim(),
+      status: isScheduled ? "agendada" : "ao_vivo",
+      audience,
+      specificDoctorIds: audience === "doutores_especificos" ? selectedDoctors : undefined,
+      scheduledAt,
+      startedAt: isScheduled ? undefined : new Date().toISOString(),
+    });
+
+    if (isScheduled) {
+      // Send scheduled notification
+      const dateLabel = scheduleDate && scheduleTime
+        ? format(new Date(`${scheduleDate}T${scheduleTime}`), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+        : "";
+      const targetType = audience === "todos_pacientes" ? "patients" : "doctors";
+      addNotification({
+        liveId: id,
+        type: "live_scheduled",
+        message: `📅 ${doctorName} agendou uma LIVE: "${title.trim()}" para ${dateLabel}`,
+        doctorName,
+        date: new Date().toISOString(),
+        read: false,
+        targetType,
+        targetIds: audience === "doutores_especificos" ? selectedDoctors : undefined,
+      });
+      toast.success("Live agendada com sucesso! Notificações enviadas.");
+    } else {
+      startLive(id);
+      toast.success("Live iniciada! Todos foram notificados.");
+      setViewingLive(id);
+    }
+
+    setTitle("");
+    setDescription("");
+    setAudience("todos_pacientes");
+    setSelectedDoctors([]);
+    setScheduleDate("");
+    setScheduleTime("");
+    setIsScheduled(false);
+    setShowCreate(false);
+  };
+
+  const handleStartScheduled = (id: string) => {
+    startLive(id);
+    setViewingLive(id);
+    toast.success("Live iniciada!");
+  };
+
+  const handleEndLive = (id: string) => {
+    endLive(id);
+    setViewingLive(null);
+    toast.success("Live encerrada.");
+  };
+
+  const handleSendChat = (liveId: string) => {
+    if (!chatMsg.trim()) return;
+    addChatMessage(liveId, {
+      liveId,
+      senderName: doctorName,
+      senderRole: "doctor",
+      message: chatMsg.trim(),
+    });
+    setChatMsg("");
+  };
+
+  const currentLive = viewingLive ? sessions.find((s) => s.id === viewingLive) : null;
+
+  // Live view
+  if (currentLive && currentLive.status === "ao_vivo") {
+    return (
+      <DashboardLayout>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Radio className="h-6 w-6 text-destructive" />
+                <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-ping" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-foreground">{currentLive.title}</h1>
+                <p className="text-xs text-muted-foreground">Ao vivo • {currentLive.doctorName}</p>
+              </div>
+            </div>
+            <Button variant="destructive" size="sm" onClick={() => handleEndLive(currentLive.id)}>
+              <Square className="h-4 w-4 mr-1" /> Encerrar Live
+            </Button>
+          </div>
+
+          {/* Video area placeholder */}
+          <div className="bg-foreground/95 rounded-2xl aspect-video flex items-center justify-center relative overflow-hidden">
+            <div className="text-center text-primary-foreground/80">
+              <Video className="h-16 w-16 mx-auto mb-3 opacity-40" />
+              <p className="text-lg font-medium">Sua câmera está transmitindo</p>
+              <p className="text-sm opacity-60">Todos os participantes estão assistindo</p>
+            </div>
+            <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive/90 text-destructive-foreground px-3 py-1.5 rounded-full text-xs font-bold">
+              <span className="h-2 w-2 bg-destructive-foreground rounded-full animate-pulse" />
+              AO VIVO
+            </div>
+          </div>
+
+          {/* Chat */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="p-3 border-b border-border/50 flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Chat da Live</span>
+              <span className="text-xs text-muted-foreground">({currentLive.chatMessages.length} msgs)</span>
+            </div>
+            <div className="h-60 overflow-y-auto p-3 space-y-2">
+              {currentLive.chatMessages.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">Nenhuma mensagem ainda...</p>
+              )}
+              {currentLive.chatMessages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.senderRole === "doctor" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[75%] px-3 py-2 rounded-xl text-sm ${
+                    msg.senderRole === "doctor"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}>
+                    <p className="text-[10px] font-bold opacity-70">{msg.senderName}</p>
+                    <p>{msg.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="p-3 border-t border-border/50 flex gap-2">
+              <input
+                value={chatMsg}
+                onChange={(e) => setChatMsg(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendChat(currentLive.id)}
+                placeholder="Enviar mensagem..."
+                className="flex-1 px-3 py-2 bg-background border border-input rounded-lg text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+              <Button size="sm" onClick={() => handleSendChat(currentLive.id)}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
+              <Radio className="h-6 w-6 text-primary" /> Lives
+            </h1>
+            <p className="text-sm text-muted-foreground">Transmita ao vivo para pacientes e colegas</p>
+          </div>
+          <Button onClick={() => setShowCreate(true)} className="gap-1.5">
+            <Plus className="h-4 w-4" /> Nova Live
+          </Button>
+        </div>
+
+        {/* Notifications for this doctor */}
+        {myDoctorNotifs.length > 0 && (
+          <div className="space-y-2">
+            {myDoctorNotifs.map((n) => (
+              <div key={n.id} className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-center gap-3">
+                <Radio className="h-4 w-4 text-primary shrink-0" />
+                <p className="text-sm text-foreground flex-1">{n.message}</p>
+              </div>
+            ))}
+            <button onClick={() => markAllNotificationsRead("doctors")} className="text-xs text-primary hover:underline">
+              Marcar todas como lidas
+            </button>
+          </div>
+        )}
+
+        {/* Active lives */}
+        {activeLives.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <span className="h-2 w-2 bg-destructive rounded-full animate-pulse" />
+              Ao Vivo Agora
+            </h2>
+            {activeLives.map((live) => (
+              <div key={live.id} className="bg-card border-2 border-destructive/30 rounded-2xl p-4 flex items-center gap-4">
+                <div className="relative">
+                  <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center">
+                    <Radio className="h-6 w-6 text-destructive" />
+                  </div>
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-ping" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground">{live.title}</p>
+                  <p className="text-xs text-muted-foreground">{live.doctorName} • {live.chatMessages.length} msgs no chat</p>
+                </div>
+                <div className="flex gap-2">
+                  {live.doctorId === doctorId ? (
+                    <>
+                      <Button size="sm" onClick={() => setViewingLive(live.id)}>Voltar à Live</Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleEndLive(live.id)}>
+                        <Square className="h-3 w-3 mr-1" /> Encerrar
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => setViewingLive(live.id)}>Assistir</Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Scheduled lives */}
+        {scheduledLives.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" /> Lives Agendadas
+            </h2>
+            {scheduledLives.map((live) => (
+              <div key={live.id} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Calendar className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground">{live.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {live.doctorName} •{" "}
+                    {live.scheduledAt && format(new Date(live.scheduledAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                  {live.description && <p className="text-xs text-muted-foreground mt-1">{live.description}</p>}
+                </div>
+                {live.doctorId === doctorId && (
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleStartScheduled(live.id)}>
+                      <Play className="h-3 w-3 mr-1" /> Iniciar
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => deleteSession(live.id)}>
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Past lives */}
+        {pastLives.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold text-foreground">Últimas Lives</h2>
+            {pastLives.slice(0, 5).map((live) => (
+              <div key={live.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 opacity-70">
+                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <Video className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-foreground text-sm">{live.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {live.doctorName} • Encerrada{" "}
+                    {live.endedAt && format(new Date(live.endedAt), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                    {" "}• {live.chatMessages.length} msgs
+                  </p>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => deleteSession(live.id)}>
+                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeLives.length === 0 && scheduledLives.length === 0 && pastLives.length === 0 && (
+          <div className="bg-card border border-border rounded-2xl p-12 text-center">
+            <Radio className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-muted-foreground font-medium">Nenhuma live ainda</p>
+            <p className="text-sm text-muted-foreground/70 mt-1">Clique em "Nova Live" para começar</p>
+          </div>
+        )}
+
+        {/* Create modal */}
+        {showCreate && (
+          <>
+            <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50" onClick={() => setShowCreate(false)} />
+            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+              <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div className="p-5 border-b border-border/50 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" /> Nova Live
+                  </h2>
+                  <button onClick={() => setShowCreate(false)}>
+                    <X className="h-5 w-5 text-muted-foreground" />
+                  </button>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1">Título *</label>
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Ex: Dicas de desenvolvimento infantil"
+                      className="w-full px-3 py-2.5 bg-background border border-input rounded-xl text-sm outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1">Descrição</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={2}
+                      placeholder="Breve descrição da live..."
+                      className="w-full px-3 py-2.5 bg-background border border-input rounded-xl text-sm outline-none focus:ring-2 focus:ring-ring resize-none"
+                    />
+                  </div>
+
+                  {/* Audience */}
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-2">Público</label>
+                    <div className="space-y-2">
+                      {([
+                        { id: "todos_pacientes", label: "Todos os pacientes", desc: "Todos os seus pacientes serão notificados" },
+                        { id: "todos_doutores", label: "Todos os doutores", desc: "Todos os colegas doutores" },
+                        { id: "doutores_especificos", label: "Doutores específicos", desc: "Escolha quais doutores" },
+                      ] as const).map((opt) => (
+                        <label
+                          key={opt.id}
+                          className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                            audience === opt.id ? "bg-primary/5 border-primary/30" : "border-border hover:bg-secondary/50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="audience"
+                            checked={audience === opt.id}
+                            onChange={() => setAudience(opt.id)}
+                            className="accent-primary"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{opt.label}</p>
+                            <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Specific doctors */}
+                  {audience === "doutores_especificos" && (
+                    <div>
+                      <label className="text-sm font-medium text-foreground block mb-2">Selecione os doutores</label>
+                      {doctors.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Nenhum outro doutor cadastrado.</p>
+                      ) : (
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                          {doctors.map((d) => (
+                            <label key={d.id} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary/50 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedDoctors.includes(d.cpf || d.id)}
+                                onChange={(e) => {
+                                  const key = d.cpf || d.id;
+                                  setSelectedDoctors(e.target.checked
+                                    ? [...selectedDoctors, key]
+                                    : selectedDoctors.filter((x) => x !== key)
+                                  );
+                                }}
+                                className="accent-primary"
+                              />
+                              <span className="text-sm text-foreground">{d.username}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Schedule toggle */}
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isScheduled}
+                        onChange={(e) => setIsScheduled(e.target.checked)}
+                        className="accent-primary"
+                      />
+                      <span className="text-sm font-medium text-foreground">Agendar para depois</span>
+                    </label>
+                  </div>
+
+                  {isScheduled && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Data</label>
+                        <input
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          className="w-full px-3 py-2 bg-background border border-input rounded-xl text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Horário</label>
+                        <input
+                          type="time"
+                          value={scheduleTime}
+                          onChange={(e) => setScheduleTime(e.target.value)}
+                          className="w-full px-3 py-2 bg-background border border-input rounded-xl text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-5 border-t border-border/50 flex gap-3 justify-end">
+                  <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+                  <Button onClick={handleCreate}>
+                    {isScheduled ? (
+                      <><Calendar className="h-4 w-4 mr-1" /> Agendar Live</>
+                    ) : (
+                      <><Radio className="h-4 w-4 mr-1" /> Iniciar Live Agora</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+}
