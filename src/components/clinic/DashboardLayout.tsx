@@ -56,6 +56,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const settings = useClinicStore((s) => s.settings);
   const authUser = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const isSuperAdmin = authUser?.role === "admin" && authUser?.cpf === SUPER_ADMIN_CPF;
   const messages = useClinicStore((s) => s.messages);
   const patients = useClinicStore((s) => s.patients);
   const clinicNotifications = useClinicStore((s) => s.notifications);
@@ -92,11 +94,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     });
   }, [patients]);
   const todayBirthdays = useMemo(() => birthdays.filter((b) => new Date(b.birthDate + "T00:00:00").getDate() === new Date().getDate()), [birthdays]);
-  const totalNotifs = unreadCount + todayBirthdays.length + unreadNotifCount + unreadPatientMsgCount + unreadSupportCount;
-
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const isSuperAdmin = user?.role === "admin" && user?.cpf === SUPER_ADMIN_CPF;
+  const totalNotifs = unreadCount + todayBirthdays.length + unreadNotifCount + unreadPatientMsgCount + unreadSupportCount + unreadAdminChatCount;
 
   // For doctors, add "Chat com Admin" item; for admin, add admin nav items
   const navItems = useMemo(() => {
