@@ -428,7 +428,7 @@ export default function FinanceiroPage() {
                     pagamento_confirmado: "Pago ✓",
                   };
                   return (
-                    <div key={n.id} className={`bg-card border border-border rounded-xl p-4 flex items-start gap-3 ${!n.readByAdmin ? "bg-primary/5" : ""}`} onClick={() => !n.readByAdmin && markBillingNotificationReadByAdmin(n.id)}>
+                    <div key={n.id} className={`bg-card border border-border rounded-xl p-4 flex items-start gap-3 cursor-pointer transition-colors ${!n.readByAdmin ? "bg-primary/5 border-primary/20" : "opacity-60"}`} onClick={() => { if (!n.readByAdmin) markBillingNotificationReadByAdmin(n.id); }}>
                       <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${typeColors[n.type]}`}>
                         {n.type === "pagamento_confirmado" ? <CheckCircle className="h-4 w-4" /> :
                          n.type === "pagamento_atrasado" ? <AlertTriangle className="h-4 w-4" /> :
