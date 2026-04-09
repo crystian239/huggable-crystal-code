@@ -25,6 +25,7 @@ const clinicNavItems = [
   { label: "Mensagens", path: "/mensagens", icon: MessageCircle },
   { label: "Suporte Pacientes", path: "/suporte", icon: Headphones },
   { label: "Teleconsulta", path: "/teleconsulta", icon: Video },
+  { label: "Live", path: "/live", icon: Radio },
   { label: "Atestados", path: "/atestados", icon: FileCheck },
   { label: "Atividades", path: "/atividades", icon: ListChecks },
   { label: "Notas Fiscais", path: "/notas-fiscais", icon: Receipt },
