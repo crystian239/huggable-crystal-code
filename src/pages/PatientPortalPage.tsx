@@ -21,7 +21,7 @@ import { useIncomingCallRingtone } from "@/hooks/useIncomingCallRingtone";
 import { useChatPresenceStore } from "@/data/chatPresenceStore";
 import { PresenceDot, PresenceLabel } from "@/components/PresenceIndicator";
 import {
-  Video, LogOut, LogIn, Calendar, MessageCircle, User, Phone, Clock, Radio,
+  Video, LogOut, LogIn, Calendar, MessageCircle, User, Phone, Clock, Radio, Image as ImageIcon,
   CreditCard, FileText, Send, Home, DollarSign, CheckCircle2,
   AlertCircle, ChevronRight, Camera, X, Paperclip, Check, XCircle, MapPin, Navigation,
   ListChecks, Link as LinkIcon, Image, ExternalLink, Eye, EyeOff, Megaphone, Download, Bell, BookOpen, ChevronDown, Sparkles, Shield, Instagram, Smartphone
