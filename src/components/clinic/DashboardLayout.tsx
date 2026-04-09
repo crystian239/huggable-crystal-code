@@ -38,7 +38,7 @@ const adminOnlyNavItems = [
 
 const adminNavItems = [
   { label: "Gestão Médicos", path: "/admin/medicos", icon: Stethoscope },
-  { label: "Cadastros Pendentes", path: "/admin/cadastros", icon: UserPlus },
+  { label: "Cadastros", path: "/admin/cadastros", icon: UserPlus },
   { label: "Chat com Médicos", path: "/admin/suporte", icon: Headphones },
   { label: "Clínica", path: "/admin/clinica", icon: Building2 },
   { label: "Logs de Auditoria", path: "/admin/logs", icon: ClipboardList },
