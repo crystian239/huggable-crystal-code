@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useClinicStore } from "@/data/clinicStore";
 import { useTeleconsultaStore } from "@/data/teleconsultaStore";
+import { useAdminStore } from "@/data/adminStore";
+import { useAuthStore } from "@/data/authStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 

@@ -35,6 +35,16 @@ export default function AdminSuportePage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [doctorMessages.length]);
 
+  // Mark messages from selected doctor as read
+  useEffect(() => {
+    if (!chatDoctor) return;
+    clinicStore.messages.forEach((m) => {
+      if (m.from === chatDoctor && m.to === "admin" && !m.read) {
+        clinicStore.markMessageRead(m.id);
+      }
+    });
+  }, [chatDoctor, clinicStore.messages]);
+
   const supportTickets = supportStore.tickets || [];
   const openTickets = supportTickets.filter((t: any) => t.status === "open" || t.status === "pending").length;
 
