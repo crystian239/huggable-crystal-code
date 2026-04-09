@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, Calendar, DollarSign, FileText, Settings, LogOut, Menu, X,
-  ClipboardList, MessageCircle, Cake, Bell, Video, Headphones, FileCheck, ListChecks, Receipt, Megaphone, Sparkles, BookOpen, Radio,
+  ClipboardList, MessageCircle, Cake, Bell, Video, Headphones, FileCheck, ListChecks, Receipt, Megaphone, Sparkles, BookOpen, Radio, Image,
   Shield, Stethoscope, UserPlus, Building2
 } from "lucide-react";
 import clinicLogo from "@/assets/clinic-logo.png";
@@ -31,6 +31,7 @@ const clinicNavItems = [
   { label: "Notas Fiscais", path: "/notas-fiscais", icon: Receipt },
   { label: "Avisos Pacientes", path: "/avisos", icon: Megaphone },
   { label: "Aniversários", path: "/aniversarios", icon: Cake },
+  { label: "Galeria", path: "/galeria", icon: Image },
   { label: "Tutorial", path: "/tutorial", icon: BookOpen },
 ];
 
