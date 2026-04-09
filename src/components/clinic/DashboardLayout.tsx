@@ -59,9 +59,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const logout = useAuthStore((s) => s.logout);
   const isSuperAdmin = authUser?.role === "admin" && authUser?.cpf === SUPER_ADMIN_CPF;
   const messages = useClinicStore((s) => s.messages);
+  const markMessageRead = useClinicStore((s) => s.markMessageRead);
   const patients = useClinicStore((s) => s.patients);
   const clinicNotifications = useClinicStore((s) => s.notifications);
   const markNotificationRead = useClinicStore((s) => s.markNotificationRead);
+  const markAllNotificationsRead = useClinicStore((s) => s.markAllNotificationsRead);
   const unreadCount = useMemo(() => messages.filter((m) => !m.read && m.to === "admin").length, [messages]);
   const unreadAdminChatCount = useMemo(() => {
     if (isSuperAdmin || !authUser?.username) return 0;
