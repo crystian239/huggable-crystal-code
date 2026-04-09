@@ -23,6 +23,9 @@ export default function VideoCallPage() {
   const [videoOn, setVideoOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [showIdentify, setShowIdentify] = useState(true);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const screenVideoRef = useRef<HTMLVideoElement>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
