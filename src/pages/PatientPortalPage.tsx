@@ -489,6 +489,13 @@ export default function PatientPortalPage() {
   const unreadMessages = unreadDoctorMessages + unreadSupportMessages;
   const unreadAnnouncements = useMemo(() => account ? patientAnnouncements.filter((a) => !a.readBy.includes(account.id)).length : 0, [account, patientAnnouncements]);
 
+  // Live store hooks (must be before early returns)
+  const liveSessions_top = useLiveStore((s) => s.sessions);
+  const liveNotifications_top = useLiveStore((s) => s.notifications);
+  const liveAddChatMessage = useLiveStore((s) => s.addChatMessage);
+  const liveMarkAllRead = useLiveStore((s) => s.markAllNotificationsRead);
+  const hasActiveLiveForPatients_top = useMemo(() => liveSessions_top.some((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes"), [liveSessions_top]);
+
   // Set patient online presence
   const { setOnline: setPresenceOnline, setOffline: setPresenceOffline, getPresence: getChatPresence } = useChatPresenceStore();
   useEffect(() => {
