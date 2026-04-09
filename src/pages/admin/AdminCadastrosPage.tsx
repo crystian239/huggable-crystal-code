@@ -75,11 +75,12 @@ export default function AdminCadastrosPage() {
       phone: newForm.phone,
       cpf: newForm.cpf,
       birthDate: newForm.birthDate,
-      password: "123456789",
+      password: "123456",
       avatar: "",
+      status: "ativo",
     });
     addLog({ action: "Paciente cadastrado", details: `${newForm.name} (CPF: ${newForm.cpf})`, performedBy: user!.username });
-    toast.success(`${newForm.name} cadastrado com acesso ao portal! Senha padrão: 123456789`);
+    toast.success(`${newForm.name} cadastrado com acesso ao portal! Senha padrão: 123456`);
     setShowNewForm(false);
     setNewForm({ name: "", cpf: "", phone: "", email: "", birthDate: "" });
   };
