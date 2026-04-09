@@ -145,6 +145,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               : item.path === "/suporte" ? unreadSupportCount
               : item.path === "/aniversarios" ? todayBirthdays.length
               : 0;
+            const hasActiveLive = item.path === "/live" && useLiveStore.getState().sessions.some((s) => s.status === "ao_vivo");
             return (
               <Link
                 key={item.path}
@@ -156,8 +157,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                 }`}
               >
-                <item.icon className={`h-4 w-4 shrink-0 transition-transform duration-200 ${active ? "" : "group-hover:scale-110"}`} />
+                <div className="relative shrink-0">
+                  <item.icon className={`h-4 w-4 transition-transform duration-200 ${active ? "" : "group-hover:scale-110"}`} />
+                  {hasActiveLive && (
+                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-ping" />
+                  )}
+                </div>
                 <span className="flex-1 relative z-10">{item.label}</span>
+                {hasActiveLive && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-destructive text-destructive-foreground font-bold">LIVE</span>
+                )}
                 {badge > 0 && (
                   <span className="bg-warning text-warning-foreground text-xs rounded-full h-5 min-w-[1.25rem] flex items-center justify-center px-1 font-semibold">{badge}</span>
                 )}
