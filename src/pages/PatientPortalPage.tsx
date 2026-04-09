@@ -932,6 +932,46 @@ export default function PatientPortalPage() {
               </div>
             </section>
 
+            {/* Gallery Section */}
+            {galleryPhotos.length > 0 && (
+              <section className="py-16 bg-gradient-to-b from-transparent to-muted/30">
+                <div className="max-w-6xl mx-auto px-4 sm:px-6">
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                      <ImageIcon className="h-4 w-4" />
+                      Nossa Galeria
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-heading font-bold text-foreground mb-3">
+                      Momentos <span className="text-primary">Especiais</span>
+                    </h2>
+                    <p className="text-muted-foreground text-sm max-w-lg mx-auto">
+                      Registros dos nossos momentos com pacientes e equipe
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {galleryPhotos.slice(0, 8).map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="group relative rounded-2xl overflow-hidden border border-border/40 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                        onClick={() => setZoomedImage(photo.src)}
+                      >
+                        <img
+                          src={photo.src}
+                          alt={photo.caption || "Foto da clínica"}
+                          className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        {photo.caption && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-foreground/70 to-transparent p-3">
+                            <p className="text-primary-foreground text-xs font-medium">{photo.caption}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* Localização Section */}
             <section className="py-20 bg-gradient-to-b from-background to-accent/20">
               <div className="max-w-5xl mx-auto px-4 sm:px-6">
