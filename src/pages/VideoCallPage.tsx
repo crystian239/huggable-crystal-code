@@ -1,8 +1,8 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useTeleconsultaStore } from "@/data/teleconsultaStore";
 import { useClinicStore } from "@/data/clinicStore";
-import { Send, Paperclip, Image, X, Video, VideoOff, Mic, MicOff, PhoneOff, MessageCircle, Users } from "lucide-react";
+import { Send, Paperclip, Image, X, Video, VideoOff, Mic, MicOff, PhoneOff, MessageCircle, Users, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -23,11 +23,46 @@ export default function VideoCallPage() {
   const [videoOn, setVideoOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [showIdentify, setShowIdentify] = useState(true);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const screenVideoRef = useRef<HTMLVideoElement>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleStartScreenShare = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: "always" } as any,
+        audio: false,
+      });
+      screenStreamRef.current = stream;
+      setScreenSharing(true);
+      if (screenVideoRef.current) {
+        screenVideoRef.current.srcObject = stream;
+      }
+      stream.getVideoTracks()[0].onended = () => {
+        setScreenSharing(false);
+        screenStreamRef.current = null;
+      };
+      toast.success("Compartilhamento de tela iniciado!");
+    } catch (err: any) {
+      if (err.name !== "NotAllowedError") {
+        toast.error("Não foi possível compartilhar a tela.");
+      }
+    }
+  }, []);
+
+  const handleStopScreenShare = useCallback(() => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
+    setScreenSharing(false);
+    toast.success("Compartilhamento encerrado.");
+  }, []);
 
   if (!room) {
     return (
@@ -71,7 +106,14 @@ export default function VideoCallPage() {
     e.target.value = "";
   };
 
+
+
+
   const handleEndCall = () => {
+    // Stop screen share if active
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+    }
     updateRoom(room.id, { status: "finalizada" });
     endCall();
     toast.success("Chamada encerrada.");
@@ -147,6 +189,27 @@ export default function VideoCallPage() {
         <div className="flex-1 flex flex-col">
           {/* Jitsi iframe */}
           <div className="flex-1 relative bg-[hsl(222,47%,6%)]">
+            {/* Screen share overlay */}
+            {screenSharing && (
+              <div className="absolute inset-0 z-10 flex flex-col">
+                <div className="bg-blue-600/90 text-white text-xs font-medium px-3 py-1.5 flex items-center justify-between z-20">
+                  <span className="flex items-center gap-2">
+                    <Monitor className="h-3.5 w-3.5" />
+                    Compartilhando sua tela
+                  </span>
+                  <button onClick={handleStopScreenShare} className="bg-white/20 hover:bg-white/30 rounded px-2 py-0.5 text-xs transition-colors">
+                    Parar
+                  </button>
+                </div>
+                <video
+                  ref={screenVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="flex-1 w-full object-contain bg-black"
+                />
+              </div>
+            )}
             <iframe
               src={`https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=${!micOn}&config.startWithVideoMuted=${!videoOn}&interfaceConfig.TOOLBAR_BUTTONS=[]&interfaceConfig.FILM_STRIP_MAX_HEIGHT=0`}
               allow="camera; microphone; fullscreen; display-capture; autoplay"
@@ -162,6 +225,13 @@ export default function VideoCallPage() {
             </button>
             <button onClick={() => setVideoOn(!videoOn)} className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${videoOn ? "bg-white/10 text-white hover:bg-white/20" : "bg-red-500 text-white"}`}>
               {videoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </button>
+            <button
+              onClick={screenSharing ? handleStopScreenShare : handleStartScreenShare}
+              className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${screenSharing ? "bg-blue-500 text-white" : "bg-white/10 text-white hover:bg-white/20"}`}
+              title={screenSharing ? "Parar compartilhamento" : "Compartilhar tela"}
+            >
+              {screenSharing ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
             </button>
             <button onClick={() => setChatOpen(!chatOpen)} className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${chatOpen ? "bg-primary text-white" : "bg-white/10 text-white hover:bg-white/20"}`}>
               <MessageCircle className="h-5 w-5" />
