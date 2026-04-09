@@ -47,9 +47,19 @@ export default function ChatAdminPage() {
     [messages, myUsername]
   );
 
+  // Auto-scroll
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [chatMessages.length]);
+
+  // Mark incoming messages as read
+  useEffect(() => {
+    chatMessages.forEach((msg) => {
+      if (msg.from === "admin" && !msg.read) {
+        markMessageRead(msg.id);
+      }
+    });
+  }, [chatMessages, markMessageRead]);
 
   const handleSend = () => {
     if (!msgContent.trim() && !msgFile && !msgImage) return;
