@@ -1414,7 +1414,10 @@ export default function PatientPortalPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id === "live") liveMarkAllRead("patients");
+                }}
                 className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all relative ${
                   activeTab === tab.id
                     ? "text-primary border-primary bg-primary/5"
