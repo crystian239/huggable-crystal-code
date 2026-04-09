@@ -503,7 +503,7 @@ export default function PatientPortalPage() {
   const [liveChatMsg_top, setLiveChatMsg_top] = useState("");
   const [expandedLiveId, setExpandedLiveId] = useState<string | null>(null);
 
-  // Set patient online presence
+  const galleryPhotos = useGalleryStore((s) => s.photos);
   const { setOnline: setPresenceOnline, setOffline: setPresenceOffline, getPresence: getChatPresence } = useChatPresenceStore();
   useEffect(() => {
     if (account) {
