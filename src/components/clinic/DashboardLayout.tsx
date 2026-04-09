@@ -238,10 +238,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <>
                 <div className="fixed inset-0 z-[60]" onClick={() => setShowNotif(false)} />
                 <div className="absolute right-0 top-full mt-1 w-80 bg-card border border-border rounded-2xl shadow-2xl z-[70] overflow-hidden">
-                <div className="p-3 border-b border-border/50">
+                <div className="p-3 border-b border-border/50 flex items-center justify-between">
                   <p className="text-sm font-heading font-semibold text-foreground flex items-center gap-1.5">
                     <Sparkles className="h-3.5 w-3.5 text-magic-gold" /> Notificações
                   </p>
+                  {totalNotifs > 0 && (
+                    <button
+                      onClick={() => {
+                        markAllNotificationsRead();
+                        // Mark all messages to admin as read
+                        messages.forEach((m) => {
+                          if (m.to === "admin" && !m.read) markMessageRead(m.id);
+                          if (m.from === "admin" && m.to === authUser?.username && !m.read) markMessageRead(m.id);
+                        });
+                      }}
+                      className="text-[10px] text-primary hover:underline font-medium"
+                    >
+                      Marcar todas como lidas
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-80 overflow-y-auto divide-y divide-border/30">
                   {recentNotifs.filter((n) => !n.read).map((n) => {
@@ -269,7 +284,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     </div>
                   ))}
                   {unreadCount > 0 && (
-                    <Link to="/mensagens" onClick={() => setShowNotif(false)} className="p-3 flex items-center gap-3 hover:bg-accent/50 transition-colors">
+                    <Link to="/mensagens" onClick={() => { setShowNotif(false); messages.filter((m) => m.to === "admin" && !m.read).forEach((m) => markMessageRead(m.id)); }} className="p-3 flex items-center gap-3 hover:bg-accent/50 transition-colors">
                       <MessageCircle className="h-4 w-4 text-primary shrink-0" />
                       <p className="text-sm text-foreground">{unreadCount} msg de doutor(es)</p>
                     </Link>
