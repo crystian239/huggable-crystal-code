@@ -219,11 +219,13 @@ export default function AdminCadastrosPage() {
               <p className="text-xs text-muted-foreground mt-1">Clique em "Novo Cadastro" para adicionar.</p>
             </div>
           ) : (
-            filteredAccounts.map((acc) => (
-              <div key={acc.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
+            filteredAccounts.map((acc) => {
+              const isActive = acc.status !== "inativo";
+              return (
+              <div key={acc.id} className={`bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow ${!isActive ? "opacity-60" : ""}`}>
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-[hsl(142,70%,45%)]/10 flex items-center justify-center shrink-0">
-                    <UserCheck className="h-6 w-6 text-[hsl(142,70%,45%)]" />
+                  <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-[hsl(142,70%,45%)]/10" : "bg-destructive/10"}`}>
+                    {isActive ? <UserCheck className="h-6 w-6 text-[hsl(142,70%,45%)]" /> : <UserX className="h-6 w-6 text-destructive" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-foreground">{acc.name}</p>
@@ -238,7 +240,16 @@ export default function AdminCadastrosPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs px-3 py-1 rounded-full font-medium bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,45%)]">Ativo</span>
+                    <span className={`text-xs px-3 py-1 rounded-full font-medium ${isActive ? "bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,45%)]" : "bg-destructive/10 text-destructive"}`}>
+                      {isActive ? "Ativo" : "Inativo"}
+                    </span>
+                    <button
+                      onClick={() => handleToggleStatus(acc)}
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${isActive ? "bg-[hsl(40,90%,50%)]/10 text-[hsl(40,90%,50%)] hover:bg-[hsl(40,90%,50%)]/20" : "bg-[hsl(142,70%,45%)]/10 text-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,45%)]/20"}`}
+                      title={isActive ? "Desativar cadastro" : "Ativar cadastro"}
+                    >
+                      {isActive ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
+                    </button>
                     {removeConfirm === acc.id ? (
                       <div className="flex gap-1">
                         <Button size="sm" variant="destructive" onClick={() => handleRemoveAccess(acc)}>
@@ -252,7 +263,7 @@ export default function AdminCadastrosPage() {
                       <button
                         onClick={() => setRemoveConfirm(acc.id)}
                         className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
-                        title="Remover acesso"
+                        title="Remover acesso permanentemente"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -260,7 +271,8 @@ export default function AdminCadastrosPage() {
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
