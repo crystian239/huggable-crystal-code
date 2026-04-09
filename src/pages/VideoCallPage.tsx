@@ -226,6 +226,13 @@ export default function VideoCallPage() {
             <button onClick={() => setVideoOn(!videoOn)} className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${videoOn ? "bg-white/10 text-white hover:bg-white/20" : "bg-red-500 text-white"}`}>
               {videoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
             </button>
+            <button
+              onClick={screenSharing ? handleStopScreenShare : handleStartScreenShare}
+              className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${screenSharing ? "bg-blue-500 text-white" : "bg-white/10 text-white hover:bg-white/20"}`}
+              title={screenSharing ? "Parar compartilhamento" : "Compartilhar tela"}
+            >
+              {screenSharing ? <MonitorOff className="h-5 w-5" /> : <Monitor className="h-5 w-5" />}
+            </button>
             <button onClick={() => setChatOpen(!chatOpen)} className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${chatOpen ? "bg-primary text-white" : "bg-white/10 text-white hover:bg-white/20"}`}>
               <MessageCircle className="h-5 w-5" />
             </button>
