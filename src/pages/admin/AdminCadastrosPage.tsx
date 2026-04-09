@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { maskPhone, maskCPF } from "@/lib/masks";
 import {
-  UserPlus, UserCheck, UserX, Search, Check, X, Plus, Trash2, Save, XCircle, Users, ClipboardList,
+  UserPlus, UserCheck, UserX, Search, Check, X, Plus, Trash2, Save, XCircle, Users, ClipboardList, ToggleLeft, ToggleRight,
 } from "lucide-react";
 
 export default function AdminCadastrosPage() {
