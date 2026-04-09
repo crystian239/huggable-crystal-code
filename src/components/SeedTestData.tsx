@@ -25,7 +25,7 @@ export function SeedTestData() {
       doctors: ["Dra. Ana Paula", "Dr. Carlos"],
       phone: "(11) 99999-1234",
       email: "contato@magiadaLinguagem.com",
-      address: "Av. Paulista, 1000 - São Paulo, SP",
+      address: "Taguatinga Shopping, Sala 204 - Brasília/DF",
     });
 
     // Patients
