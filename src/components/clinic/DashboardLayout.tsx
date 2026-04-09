@@ -61,6 +61,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const clinicNotifications = useClinicStore((s) => s.notifications);
   const markNotificationRead = useClinicStore((s) => s.markNotificationRead);
   const unreadCount = useMemo(() => messages.filter((m) => !m.read && m.to === "admin").length, [messages]);
+  const unreadAdminChatCount = useMemo(() => {
+    if (isSuperAdmin || !authUser?.username) return 0;
+    return messages.filter((m) => m.from === "admin" && m.to === authUser.username && !m.read).length;
+  }, [messages, authUser?.username, isSuperAdmin]);
   const patientMessages = useTeleconsultaStore((s) => s.patientMessages);
   const unreadPatientMsgCount = useMemo(() => patientMessages.filter((m) => m.sender === "patient" && !m.read).length, [patientMessages]);
   const supportTickets = useSupportStore((s) => s.tickets);
