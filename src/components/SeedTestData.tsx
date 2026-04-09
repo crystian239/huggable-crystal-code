@@ -217,6 +217,31 @@ export function SeedTestData() {
       patientId: p1Id, doctorName: "Dra. Ana Paula", status: "aguardando",
     });
 
+    // Seed doctors into admin store (for chat and management)
+    if (doctors.length === 0) {
+      addDoctor({
+        name: "Ana Paula",
+        specialty: "Fonoaudiologia",
+        crp: "CRP 01/12345",
+        phone: "(11) 99999-0001",
+        email: "anapaula@clinica.com",
+        status: "ativo",
+        loginUsername: "ana.paula",
+      });
+      addDoctor({
+        name: "Carlos Silva",
+        specialty: "Psicologia",
+        crp: "CRP 01/67890",
+        phone: "(11) 99999-0002",
+        email: "carlos@clinica.com",
+        status: "ativo",
+        loginUsername: "carlos.silva",
+      });
+      // Create login accounts for doctors
+      addUser("ana.paula", "123456", "doctor");
+      addUser("carlos.silva", "123456", "doctor");
+    }
+
     setSeeded(true);
     toast.success("Dados de teste criados com sucesso! Use maria@email.com / 123456 para o portal do paciente.");
   };
