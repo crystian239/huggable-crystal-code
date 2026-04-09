@@ -1420,6 +1420,9 @@ export default function PatientPortalPage() {
                     : "text-muted-foreground border-transparent hover:text-foreground hover:bg-muted/50"
                 }`}
               >
+                {tab.pulse && (
+                  <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-destructive rounded-full animate-ping" />
+                )}
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
                 {tab.badge && tab.badge > 0 ? (
