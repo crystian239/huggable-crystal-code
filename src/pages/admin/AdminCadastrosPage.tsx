@@ -92,6 +92,13 @@ export default function AdminCadastrosPage() {
     setRemoveConfirm(null);
   };
 
+  const handleToggleStatus = (acc: { id: string; name: string; status?: string }) => {
+    const newStatus = acc.status === "inativo" ? "ativo" : "inativo";
+    teleconsultaStore.updatePatientAccount(acc.id, { status: newStatus as "ativo" | "inativo" });
+    addLog({ action: newStatus === "ativo" ? "Cadastro ativado" : "Cadastro desativado", details: acc.name, performedBy: user!.username });
+    toast.success(`${acc.name} ${newStatus === "ativo" ? "ativado" : "desativado"}.`);
+  };
+
   const filteredAccounts = teleconsultaStore.patientAccounts.filter(
     (a) => a.name.toLowerCase().includes(searchTerm.toLowerCase()) || a.cpf.includes(searchTerm)
   );
