@@ -32,6 +32,38 @@ export default function VideoCallPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleStartScreenShare = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: "always" } as any,
+        audio: false,
+      });
+      screenStreamRef.current = stream;
+      setScreenSharing(true);
+      if (screenVideoRef.current) {
+        screenVideoRef.current.srcObject = stream;
+      }
+      stream.getVideoTracks()[0].onended = () => {
+        setScreenSharing(false);
+        screenStreamRef.current = null;
+      };
+      toast.success("Compartilhamento de tela iniciado!");
+    } catch (err: any) {
+      if (err.name !== "NotAllowedError") {
+        toast.error("Não foi possível compartilhar a tela.");
+      }
+    }
+  }, []);
+
+  const handleStopScreenShare = useCallback(() => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
+    setScreenSharing(false);
+    toast.success("Compartilhamento encerrado.");
+  }, []);
+
   if (!room) {
     return (
       <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center">
