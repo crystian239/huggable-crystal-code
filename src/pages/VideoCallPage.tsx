@@ -157,8 +157,17 @@ export default function VideoCallPage() {
     }, 500);
   };
 
-  // Identify modal
-  if (showIdentify) {
+  // Entry screen - if user is detected, show confirmation; if not, show error
+  if (!entered) {
+    const handleEnter = () => {
+      if (!senderName.trim()) {
+        toast.error("Não foi possível identificar seu usuário. Faça login primeiro.");
+        return;
+      }
+      setEntered(true);
+      if (room.status === "aguardando") updateRoom(room.id, { status: "em_andamento" });
+    };
+
     return (
       <div className="min-h-screen bg-[hsl(var(--background))] flex items-center justify-center p-4">
         <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl p-6 w-full max-w-sm shadow-lg">
@@ -167,29 +176,30 @@ export default function VideoCallPage() {
               <Video className="h-8 w-8 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Teleconsulta</h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">Identifique-se para entrar na sala</p>
-            {patient && <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Paciente: <strong>{patient.name}</strong></p>}
+            {detectedIdentity ? (
+              <>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-2">Entrando como:</p>
+                <div className="mt-3 bg-[hsl(var(--secondary))] rounded-xl p-3">
+                  <p className="font-semibold text-[hsl(var(--foreground))]">{detectedIdentity.name}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    {detectedIdentity.role === "doctor" ? "👨‍⚕️ Profissional" : "🧑 Paciente"}
+                  </p>
+                </div>
+                {patient && <p className="text-xs text-[hsl(var(--muted-foreground))] mt-3">Paciente: <strong>{patient.name}</strong></p>}
+              </>
+            ) : (
+              <p className="text-sm text-destructive mt-2">Você precisa estar logado para entrar na teleconsulta.</p>
+            )}
           </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-[hsl(var(--foreground))] mb-1 block">Seu nome</label>
-              <input type="text" value={senderName} onChange={(e) => setSenderName(e.target.value)} placeholder="Digite seu nome" className="w-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--ring))]" />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-[hsl(var(--foreground))] mb-1 block">Você é</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setSenderRole("doctor")} className={`py-2.5 text-sm rounded-lg border transition-colors ${senderRole === "doctor" ? "bg-primary text-primary-foreground border-primary" : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]"}`}>
-                  👨‍⚕️ Profissional
-                </button>
-                <button onClick={() => setSenderRole("patient")} className={`py-2.5 text-sm rounded-lg border transition-colors ${senderRole === "patient" ? "bg-primary text-primary-foreground border-primary" : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--secondary))]"}`}>
-                  🧑 Paciente
-                </button>
-              </div>
-            </div>
-            <button onClick={() => { if (senderName.trim()) { setShowIdentify(false); if (room.status === "aguardando") updateRoom(room.id, { status: "em_andamento" }); } else toast.error("Digite seu nome"); }} className="w-full bg-primary text-primary-foreground rounded-lg py-2.5 text-sm font-medium hover:opacity-90 transition-opacity">
+          {detectedIdentity ? (
+            <button onClick={handleEnter} className="w-full bg-primary text-primary-foreground rounded-lg py-2.5 text-sm font-medium hover:opacity-90 transition-opacity">
               Entrar na Sala
             </button>
-          </div>
+          ) : (
+            <button onClick={() => window.location.href = "/login"} className="w-full bg-primary text-primary-foreground rounded-lg py-2.5 text-sm font-medium hover:opacity-90 transition-opacity">
+              Ir para Login
+            </button>
+          )}
         </div>
       </div>
     );
