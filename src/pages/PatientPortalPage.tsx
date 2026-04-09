@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type PortalTab = "inicio" | "consultas" | "atividades" | "financeiro" | "mensagens" | "avisos" | "tutorial" | "perfil";
+type PortalTab = "inicio" | "consultas" | "atividades" | "financeiro" | "mensagens" | "avisos" | "live" | "tutorial" | "perfil";
 
 function ChangePasswordSection({ accountId, currentPassword }: { accountId: string; currentPassword: string }) {
   const updatePatientAccount = useTeleconsultaStore((s) => s.updatePatientAccount);
