@@ -40,7 +40,7 @@ export default function RecibosPage() {
       name: "Clínica Magia Da Linguagem",
       phone: "(11) 99999-8888",
       email: "contato@magiadaLinguagem.com",
-      address: "Rua das Flores, 456 - São Paulo/SP",
+      address: "Taguatinga Shopping, Sala 204 - Brasília/DF",
       cnpj: "12.345.678/0001-90",
       crp: "CRP 06/123456",
       doctorName: "Dra. Maria Silva",
