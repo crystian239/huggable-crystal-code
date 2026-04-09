@@ -1,8 +1,8 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { useTeleconsultaStore } from "@/data/teleconsultaStore";
 import { useClinicStore } from "@/data/clinicStore";
-import { Send, Paperclip, Image, X, Video, VideoOff, Mic, MicOff, PhoneOff, MessageCircle, Users } from "lucide-react";
+import { Send, Paperclip, Image, X, Video, VideoOff, Mic, MicOff, PhoneOff, MessageCircle, Users, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
