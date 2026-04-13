@@ -519,6 +519,13 @@ export default function PatientPortalPage() {
     }
   }, [account, setPresenceOnline, setPresenceOffline]);
 
+  // Auto-refresh for real-time updates (2s polling)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Auto-check billing notifications
   useEffect(() => {
     if (loggedIn) checkAndNotify();
