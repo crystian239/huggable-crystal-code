@@ -566,8 +566,8 @@ export default function LivePage() {
         {pastLives.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-sm font-semibold text-foreground">Últimas Lives</h2>
-            {pastLives.slice(0, 5).map((live) => (
-              <div key={live.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 opacity-70">
+            {pastLives.slice(0, 10).map((live) => (
+              <div key={live.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                 <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                   <Video className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -579,9 +579,25 @@ export default function LivePage() {
                     {" "}• {live.chatMessages.length} msgs
                   </p>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => deleteSession(live.id)}>
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {live.doctorId === doctorId && (
+                    <Button size="sm" variant={live.replayAvailable ? "default" : "outline"}
+                      onClick={() => { toggleReplay(live.id); toast.success(live.replayAvailable ? "Replay removido" : "Replay disponibilizado!"); }}
+                      className="gap-1 text-xs">
+                      <RotateCcw className="h-3 w-3" />
+                      {live.replayAvailable ? "Replay ✓" : "Liberar Replay"}
+                    </Button>
+                  )}
+                  {!live.replayAvailable && live.doctorId !== doctorId && (
+                    <span className="text-[10px] text-muted-foreground">Sem replay</span>
+                  )}
+                  {live.replayAvailable && live.doctorId !== doctorId && (
+                    <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full">Replay disponível</span>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => deleteSession(live.id)}>
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
