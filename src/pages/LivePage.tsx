@@ -346,7 +346,28 @@ export default function LivePage() {
               <MessageCircle className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">Chat da Live</span>
               <span className="text-xs text-muted-foreground">({currentLive.chatMessages.length})</span>
+              {isOwner && (currentLive.filteredMessages?.length || 0) > 0 && (
+                <button onClick={() => setShowFilteredMsgs(!showFilteredMsgs)}
+                  className="ml-auto flex items-center gap-1 text-xs text-destructive hover:underline">
+                  <Shield className="h-3 w-3" /> {currentLive.filteredMessages.length} bloqueada(s)
+                </button>
+              )}
             </div>
+
+            {/* Filtered messages (doctor only) */}
+            {showFilteredMsgs && isOwner && (currentLive.filteredMessages?.length || 0) > 0 && (
+              <div className="p-3 bg-destructive/5 border-b border-destructive/20 space-y-2 max-h-32 overflow-y-auto">
+                <p className="text-xs font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Mensagens filtradas:</p>
+                {currentLive.filteredMessages.map((fm) => (
+                  <div key={fm.id} className="text-xs bg-card rounded-lg px-2 py-1.5">
+                    <span className="font-medium text-foreground">{fm.senderName}:</span>{" "}
+                    <span className="text-muted-foreground line-through">{fm.originalMessage}</span>
+                    <span className="text-destructive ml-2 text-[10px]">({fm.reason})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="h-60 overflow-y-auto p-3 space-y-2">
               {currentLive.chatMessages.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">Nenhuma mensagem ainda...</p>
@@ -358,6 +379,16 @@ export default function LivePage() {
                       <span className="text-[11px] text-muted-foreground bg-secondary/70 px-3 py-1 rounded-full">
                         {msg.message}
                       </span>
+                    </div>
+                  );
+                }
+                if (msg.type === "bot") {
+                  return (
+                    <div key={msg.id} className="flex justify-start">
+                      <div className="max-w-[85%] px-3 py-2 rounded-xl text-sm bg-accent/50 border border-accent/30 text-foreground">
+                        <p className="text-[10px] font-bold opacity-70">🤖 {msg.senderName}</p>
+                        <p>{msg.message}</p>
+                      </div>
                     </div>
                   );
                 }
@@ -379,19 +410,46 @@ export default function LivePage() {
               })}
               <div ref={chatEndRef} />
             </div>
-            <div className="p-3 border-t border-border/50 flex gap-2">
+            <div className="p-3 border-t border-border/50 flex gap-2 items-center">
+              <EmojiPicker onSelect={(emoji) => setChatMsg((prev) => prev + emoji)} />
               <input
                 value={chatMsg}
                 onChange={(e) => setChatMsg(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendChat(currentLive.id)}
-                placeholder="Enviar mensagem..."
+                placeholder={isOwner ? "Mensagem ou /link /divulgar /aviso /msg..." : "Enviar mensagem..."}
                 className="flex-1 px-3 py-2 bg-background border border-input rounded-lg text-sm outline-none focus:ring-2 focus:ring-ring"
               />
               <Button size="sm" onClick={() => handleSendChat(currentLive.id)}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            {isOwner && (
+              <div className="px-3 pb-2 text-[10px] text-muted-foreground">
+                💡 Comandos: <code>/link URL</code> • <code>/divulgar texto</code> • <code>/aviso texto</code> • <code>/msg texto</code>
+              </div>
+            )}
           </div>
+
+          {/* Replay modal after ending */}
+          {showReplayModal && (
+            <>
+              <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50" onClick={() => setShowReplayModal(null)} />
+              <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <RotateCcw className="h-5 w-5 text-primary" /> Disponibilizar Replay?
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Deseja que os pacientes possam assistir o replay desta live?</p>
+                  <div className="flex gap-3 justify-end">
+                    <Button variant="outline" onClick={() => setShowReplayModal(null)}>Não, por enquanto</Button>
+                    <Button onClick={() => { toggleReplay(showReplayModal); setShowReplayModal(null); toast.success("Replay disponibilizado!"); }}>
+                      Sim, disponibilizar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </DashboardLayout>
     );
