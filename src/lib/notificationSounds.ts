@@ -1,5 +1,4 @@
 // Notification sound manager using Web Audio API
-// Each notification type has a unique tone/melody
 
 let audioCtx: AudioContext | null = null;
 
@@ -7,20 +6,6 @@ function getCtx(): AudioContext {
   if (!audioCtx) audioCtx = new AudioContext();
   if (audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
-}
-
-function playTone(frequency: number, duration: number, type: OscillatorType = "sine", volume = 0.15) {
-  const ctx = getCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.value = frequency;
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + duration);
 }
 
 function playMelody(notes: { freq: number; dur: number; delay: number }[], type: OscillatorType = "sine", volume = 0.12) {
@@ -39,7 +24,7 @@ function playMelody(notes: { freq: number; dur: number; delay: number }[], type:
   });
 }
 
-/** 💬 Nova mensagem - som suave e curto (plim plim) */
+/** 💬 Nova mensagem */
 export function playMessageSound() {
   playMelody([
     { freq: 880, dur: 0.12, delay: 0 },
@@ -47,7 +32,7 @@ export function playMessageSound() {
   ], "sine", 0.1);
 }
 
-/** 🎧 Suporte - tom mais grave e acolhedor */
+/** 🎧 Suporte */
 export function playSupportSound() {
   playMelody([
     { freq: 523, dur: 0.15, delay: 0 },
@@ -56,7 +41,7 @@ export function playSupportSound() {
   ], "triangle", 0.1);
 }
 
-/** 📅 Agendamento / Consulta - sino suave */
+/** 📅 Agendamento */
 export function playAppointmentSound() {
   playMelody([
     { freq: 1047, dur: 0.3, delay: 0 },
@@ -64,7 +49,7 @@ export function playAppointmentSound() {
   ], "sine", 0.08);
 }
 
-/** 🎂 Aniversário - melodia alegre */
+/** 🎂 Aniversário */
 export function playBirthdaySound() {
   playMelody([
     { freq: 523, dur: 0.12, delay: 0 },
@@ -76,7 +61,7 @@ export function playBirthdaySound() {
   ], "triangle", 0.1);
 }
 
-/** 🔔 Notificação geral (sino/bell) */
+/** 🔔 Notificação geral */
 export function playNotificationSound() {
   playMelody([
     { freq: 740, dur: 0.15, delay: 0 },
@@ -84,7 +69,7 @@ export function playNotificationSound() {
   ], "sine", 0.1);
 }
 
-/** 💰 Financeiro - som de moeda/cash */
+/** 💰 Financeiro */
 export function playFinanceSound() {
   playMelody([
     { freq: 1200, dur: 0.08, delay: 0 },
@@ -93,7 +78,7 @@ export function playFinanceSound() {
   ], "square", 0.05);
 }
 
-/** ✅ Sucesso / Confirmação */
+/** ✅ Sucesso */
 export function playSuccessSound() {
   playMelody([
     { freq: 523, dur: 0.1, delay: 0 },
@@ -103,7 +88,7 @@ export function playSuccessSound() {
   ], "sine", 0.08);
 }
 
-/** ❌ Erro / Alerta */
+/** ❌ Erro */
 export function playErrorSound() {
   playMelody([
     { freq: 400, dur: 0.15, delay: 0 },
@@ -111,7 +96,7 @@ export function playErrorSound() {
   ], "sawtooth", 0.06);
 }
 
-/** 📨 Aviso / Mural - tom de atenção */
+/** 📨 Aviso */
 export function playAnnouncementSound() {
   playMelody([
     { freq: 660, dur: 0.1, delay: 0 },
@@ -119,4 +104,23 @@ export function playAnnouncementSound() {
     { freq: 660, dur: 0.1, delay: 0.24 },
     { freq: 880, dur: 0.2, delay: 0.36 },
   ], "triangle", 0.08);
+}
+
+/** 🔴 Live iniciada - som dramático */
+export function playLiveStartSound() {
+  playMelody([
+    { freq: 440, dur: 0.15, delay: 0 },
+    { freq: 554, dur: 0.15, delay: 0.12 },
+    { freq: 659, dur: 0.15, delay: 0.24 },
+    { freq: 880, dur: 0.3, delay: 0.36 },
+  ], "triangle", 0.15);
+}
+
+/** 🖐 Solicitação para participar */
+export function playJoinRequestSound() {
+  playMelody([
+    { freq: 600, dur: 0.1, delay: 0 },
+    { freq: 800, dur: 0.1, delay: 0.1 },
+    { freq: 600, dur: 0.1, delay: 0.2 },
+  ], "sine", 0.1);
 }
