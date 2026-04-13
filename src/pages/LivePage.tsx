@@ -168,6 +168,7 @@ export default function LivePage() {
   const handleEndLive = (id: string) => {
     endLive(id);
     setViewingLive(null);
+    setShowReplayModal(id);
     toast.success("Live encerrada.");
   };
 
@@ -178,7 +179,10 @@ export default function LivePage() {
 
   const handleSendChat = (liveId: string) => {
     if (!chatMsg.trim()) return;
-    addChatMessage(liveId, { liveId, senderName: doctorName, senderRole: isDoctor ? "doctor" : "patient", message: chatMsg.trim() });
+    const result = addModeratedMessage(liveId, { liveId, senderName: doctorName, senderRole: isDoctor ? "doctor" : "patient", message: chatMsg.trim() });
+    if (!result.sent && result.warning) {
+      toast.warning("Mensagem bloqueada pelo moderador.");
+    }
     setChatMsg("");
   };
 
