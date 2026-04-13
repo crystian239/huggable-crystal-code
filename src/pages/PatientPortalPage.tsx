@@ -24,7 +24,8 @@ import {
   Video, LogOut, LogIn, Calendar, MessageCircle, User, Phone, Clock, Radio, Image as ImageIcon,
   CreditCard, FileText, Send, Home, DollarSign, CheckCircle2,
   AlertCircle, ChevronRight, Camera, X, Paperclip, Check, XCircle, MapPin, Navigation,
-  ListChecks, Link as LinkIcon, Image, ExternalLink, Eye, EyeOff, Megaphone, Download, Bell, BookOpen, ChevronDown, Sparkles, Shield, Instagram, Smartphone
+  ListChecks, Link as LinkIcon, Image, ExternalLink, Eye, EyeOff, Megaphone, Download, Bell, BookOpen, ChevronDown, Sparkles, Shield, Instagram, Smartphone,
+  Hand, RotateCcw, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
