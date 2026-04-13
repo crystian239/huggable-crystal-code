@@ -272,9 +272,9 @@ export default function LivePage() {
 
           {/* Join requests (doctor only) */}
           {isOwner && pendingRequests.length > 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 space-y-2">
+            <div className="bg-accent/30 border border-accent/50 rounded-xl p-3 space-y-2">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Hand className="h-4 w-4 text-amber-500" /> Solicitações para participar ({pendingRequests.length})
+                <Hand className="h-4 w-4 text-accent-foreground" /> Solicitações para participar ({pendingRequests.length})
               </h3>
               {pendingRequests.map((req) => (
                 <div key={req.id} className="flex items-center gap-3 bg-card rounded-lg px-3 py-2">
@@ -303,7 +303,7 @@ export default function LivePage() {
               <span className="h-2 w-2 bg-destructive-foreground rounded-full animate-pulse" />
               AO VIVO
             </div>
-            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-black/50 text-white px-2.5 py-1 rounded-full text-xs">
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-foreground/50 text-background px-2.5 py-1 rounded-full text-xs">
               <Eye className="h-3 w-3" /> {viewerCount}
             </div>
           </div>
@@ -328,7 +328,7 @@ export default function LivePage() {
               <span className="ml-auto text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">⏳ Aguardando aprovação</span>
             )}
             {!isOwner && currentLive.joinRequests.some((r) => r.name === doctorName && r.status === "accepted") && (
-              <span className="ml-auto text-xs text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">✅ Participando</span>
+              <span className="ml-auto text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">✅ Participando</span>
             )}
           </div>
 
