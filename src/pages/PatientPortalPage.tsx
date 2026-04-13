@@ -24,7 +24,8 @@ import {
   Video, LogOut, LogIn, Calendar, MessageCircle, User, Phone, Clock, Radio, Image as ImageIcon,
   CreditCard, FileText, Send, Home, DollarSign, CheckCircle2,
   AlertCircle, ChevronRight, Camera, X, Paperclip, Check, XCircle, MapPin, Navigation,
-  ListChecks, Link as LinkIcon, Image, ExternalLink, Eye, EyeOff, Megaphone, Download, Bell, BookOpen, ChevronDown, Sparkles, Shield, Instagram, Smartphone
+  ListChecks, Link as LinkIcon, Image, ExternalLink, Eye, EyeOff, Megaphone, Download, Bell, BookOpen, ChevronDown, Sparkles, Shield, Instagram, Smartphone,
+  Hand, RotateCcw, Play
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -493,7 +494,11 @@ export default function PatientPortalPage() {
   // Live store hooks (must be before early returns)
   const liveSessions_top = useLiveStore((s) => s.sessions);
   const liveNotifications_top = useLiveStore((s) => s.notifications);
-  const liveAddChatMessage = useLiveStore((s) => s.addChatMessage);
+  const liveAddModeratedMessage = useLiveStore((s) => s.addModeratedMessage);
+  const liveAddViewer = useLiveStore((s) => s.addViewer);
+  const liveRemoveViewer = useLiveStore((s) => s.removeViewer);
+  const liveAddEmojiReaction = useLiveStore((s) => s.addEmojiReaction);
+  const liveRequestToJoin = useLiveStore((s) => s.requestToJoin);
   const liveMarkAllRead = useLiveStore((s) => s.markAllNotificationsRead);
   const hasActiveLiveForPatients_top = useMemo(() => liveSessions_top.some((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes"), [liveSessions_top]);
   const liveNotifCount_top = useMemo(() => {
@@ -502,6 +507,8 @@ export default function PatientPortalPage() {
   }, [liveNotifications_top, hasActiveLiveForPatients_top]);
   const [liveChatMsg_top, setLiveChatMsg_top] = useState("");
   const [expandedLiveId, setExpandedLiveId] = useState<string | null>(null);
+  const [liveFloatingEmojis, setLiveFloatingEmojis] = useState<{ id: string; emoji: string; x: number }[]>([]);
+  const [viewingReplay, setViewingReplay] = useState<string | null>(null);
 
   const galleryPhotos = useGalleryStore((s) => s.photos);
   const { setOnline: setPresenceOnline, setOffline: setPresenceOffline, getPresence: getChatPresence } = useChatPresenceStore();
@@ -511,6 +518,13 @@ export default function PatientPortalPage() {
       return () => { setPresenceOffline(account.id); };
     }
   }, [account, setPresenceOnline, setPresenceOffline]);
+
+  // Auto-refresh for real-time updates (2s polling)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-check billing notifications
   useEffect(() => {
@@ -2604,7 +2618,16 @@ export default function PatientPortalPage() {
               <Radio className="h-5 w-5 text-primary" /> Lives
             </h2>
 
-            {/* Active lives - clickable to expand */}
+            {/* Floating emojis */}
+            <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+              {liveFloatingEmojis.map((fe) => (
+                <span key={fe.id} className="absolute text-3xl" style={{ left: `${fe.x}%`, bottom: "20%", animation: "floatUp 2s ease-out forwards" }}>
+                  {fe.emoji}
+                </span>
+              ))}
+            </div>
+
+            {/* Active lives */}
             {liveSessions_top.filter((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes").length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -2612,11 +2635,20 @@ export default function PatientPortalPage() {
                 </h3>
                 {liveSessions_top.filter((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes").map((live) => {
                   const isExpanded = expandedLiveId === live.id;
+                  const patientName = account?.name || "Paciente";
+                  const isViewing = live.viewers.some((v) => v.name === patientName);
+                  const hasRequestedJoin = live.joinRequests.some((r) => r.name === patientName);
+                  const joinStatus = live.joinRequests.find((r) => r.name === patientName)?.status;
+
                   return (
                     <div key={live.id} className="bg-card border-2 border-destructive/30 rounded-2xl overflow-hidden">
-                      {/* Header - always visible, click to expand */}
                       <button
-                        onClick={() => setExpandedLiveId(isExpanded ? null : live.id)}
+                        onClick={() => {
+                          if (!isExpanded && account) {
+                            liveAddViewer(live.id, { name: patientName, role: "patient" });
+                          }
+                          setExpandedLiveId(isExpanded ? null : live.id);
+                        }}
                         className="w-full p-4 flex items-center gap-4 hover:bg-accent/30 transition-colors text-left"
                       >
                         <div className="relative">
@@ -2630,25 +2662,57 @@ export default function PatientPortalPage() {
                             <p className="font-semibold text-foreground">{live.title}</p>
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground font-bold animate-pulse">AO VIVO</span>
                           </div>
-                          <p className="text-xs text-muted-foreground">{live.doctorName} • {live.chatMessages.length} msgs no chat</p>
+                          <p className="text-xs text-muted-foreground">
+                            {live.doctorName} • <Eye className="inline h-3 w-3" /> {live.viewers.length} assistindo • {live.chatMessages.length} msgs
+                          </p>
                         </div>
                         <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                       </button>
 
-                      {/* Expanded view */}
                       {isExpanded && (
                         <>
-                          {/* Video placeholder */}
+                          {/* Video */}
                           <div className="bg-foreground/95 aspect-video flex items-center justify-center relative">
                             <div className="text-center text-primary-foreground/80">
                               <Video className="h-12 w-12 mx-auto mb-2 opacity-40" />
-                              <p className="text-sm">Transmissão ao vivo</p>
+                              <p className="text-sm">Assistindo {live.doctorName}</p>
+                              <p className="text-xs opacity-60">{live.viewers.length} pessoa(s) assistindo</p>
                             </div>
                             <div className="absolute top-4 left-4 flex items-center gap-2 bg-destructive/90 text-destructive-foreground px-3 py-1 rounded-full text-xs font-bold">
-                              <span className="h-2 w-2 bg-destructive-foreground rounded-full animate-pulse" />
-                              AO VIVO
+                              <span className="h-2 w-2 bg-destructive-foreground rounded-full animate-pulse" /> AO VIVO
+                            </div>
+                            <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-foreground/50 text-background px-2.5 py-1 rounded-full text-xs">
+                              <Eye className="h-3 w-3" /> {live.viewers.length}
                             </div>
                           </div>
+
+                          {/* Emoji reactions + join request */}
+                          <div className="flex items-center gap-2 flex-wrap p-3 border-t border-border/50">
+                            {["❤️", "👏", "🔥", "😂", "😍", "👍", "🎉", "💯"].map((emoji) => (
+                              <button key={emoji} onClick={() => {
+                                if (account) {
+                                  liveAddEmojiReaction(live.id, emoji, patientName);
+                                  const id = crypto.randomUUID();
+                                  const x = 20 + Math.random() * 60;
+                                  setLiveFloatingEmojis((prev) => [...prev, { id, emoji, x }]);
+                                  setTimeout(() => setLiveFloatingEmojis((prev) => prev.filter((e) => e.id !== id)), 2000);
+                                }
+                              }} className="text-xl hover:scale-125 transition-transform active:scale-90 p-0.5">
+                                {emoji}
+                              </button>
+                            ))}
+                            {!hasRequestedJoin && (
+                              <Button size="sm" variant="outline" className="ml-auto gap-1 text-xs" onClick={() => {
+                                if (account) { liveRequestToJoin(live.id, { name: patientName, role: "patient" }); toast.success("Solicitação enviada!"); }
+                              }}>
+                                <Hand className="h-3 w-3" /> Participar
+                              </Button>
+                            )}
+                            {joinStatus === "pending" && <span className="ml-auto text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">⏳ Aguardando</span>}
+                            {joinStatus === "accepted" && <span className="ml-auto text-xs text-primary bg-primary/10 px-2 py-1 rounded-full">✅ Participando</span>}
+                            {joinStatus === "rejected" && <span className="ml-auto text-xs text-destructive bg-destructive/10 px-2 py-1 rounded-full">❌ Recusado</span>}
+                          </div>
+
                           {/* Chat */}
                           <div className="border-t border-border/50">
                             <div className="p-3 border-b border-border/50 flex items-center gap-2">
@@ -2659,28 +2723,47 @@ export default function PatientPortalPage() {
                               {live.chatMessages.length === 0 && (
                                 <p className="text-sm text-muted-foreground text-center py-6">Nenhuma mensagem ainda...</p>
                               )}
-                              {live.chatMessages.map((msg) => (
-                                <div key={msg.id} className={`flex ${msg.senderRole === "patient" && msg.senderName === account?.name ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[75%] px-3 py-2 rounded-xl text-sm ${
-                                    msg.senderRole === "doctor"
-                                      ? "bg-primary/10 text-foreground"
-                                      : msg.senderName === account?.name
-                                        ? "bg-primary text-primary-foreground"
+                              {live.chatMessages.map((msg) => {
+                                if (msg.type === "system") {
+                                  return (
+                                    <div key={msg.id} className="text-center">
+                                      <span className="text-[11px] text-muted-foreground bg-secondary/70 px-3 py-1 rounded-full">{msg.message}</span>
+                                    </div>
+                                  );
+                                }
+                                if (msg.type === "bot") {
+                                  return (
+                                    <div key={msg.id} className="flex justify-start">
+                                      <div className="max-w-[85%] px-3 py-2 rounded-xl text-sm bg-accent/50 border border-accent/30 text-foreground">
+                                        <p className="text-[10px] font-bold opacity-70">🤖 {msg.senderName}</p>
+                                        <p>{msg.message}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <div key={msg.id} className={`flex ${msg.senderName === patientName ? "justify-end" : "justify-start"}`}>
+                                    <div className={`max-w-[75%] px-3 py-2 rounded-xl text-sm ${
+                                      msg.senderRole === "doctor" ? "bg-primary/10 text-foreground"
+                                        : msg.senderName === patientName ? "bg-primary text-primary-foreground"
                                         : "bg-secondary text-secondary-foreground"
-                                  }`}>
-                                    <p className="text-[10px] font-bold opacity-70">{msg.senderName} {msg.senderRole === "doctor" ? "🩺" : ""}</p>
-                                    <p>{msg.message}</p>
+                                    }`}>
+                                      <p className="text-[10px] font-bold opacity-70">{msg.senderName} {msg.senderRole === "doctor" ? "🩺" : ""}</p>
+                                      <p>{msg.message}</p>
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
-                            <div className="p-3 border-t border-border/50 flex gap-2">
+                            <div className="p-3 border-t border-border/50 flex gap-2 items-center">
+                              <EmojiPicker onSelect={(emoji) => setLiveChatMsg_top((prev) => prev + emoji)} />
                               <input
                                 value={liveChatMsg_top}
                                 onChange={(e) => setLiveChatMsg_top(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" && liveChatMsg_top.trim() && account) {
-                                    liveAddChatMessage(live.id, { liveId: live.id, senderName: account.name, senderRole: "patient", message: liveChatMsg_top.trim() });
+                                    const result = liveAddModeratedMessage(live.id, { liveId: live.id, senderName: patientName, senderRole: "patient", message: liveChatMsg_top.trim() });
+                                    if (!result.sent) toast.warning("Mensagem bloqueada pelo moderador.");
                                     setLiveChatMsg_top("");
                                   }
                                 }}
@@ -2689,7 +2772,8 @@ export default function PatientPortalPage() {
                               />
                               <Button size="sm" onClick={() => {
                                 if (liveChatMsg_top.trim() && account) {
-                                  liveAddChatMessage(live.id, { liveId: live.id, senderName: account.name, senderRole: "patient", message: liveChatMsg_top.trim() });
+                                  const result = liveAddModeratedMessage(live.id, { liveId: live.id, senderName: patientName, senderRole: "patient", message: liveChatMsg_top.trim() });
+                                  if (!result.sent) toast.warning("Mensagem bloqueada pelo moderador.");
                                   setLiveChatMsg_top("");
                                 }
                               }}>
@@ -2705,7 +2789,7 @@ export default function PatientPortalPage() {
               </div>
             )}
 
-            {/* Scheduled lives */}
+            {/* Scheduled */}
             {liveSessions_top.filter((s) => s.status === "agendada" && s.audience === "todos_pacientes").length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -2729,23 +2813,56 @@ export default function PatientPortalPage() {
               </div>
             )}
 
-            {/* Ended lives */}
-            {liveSessions_top.filter((s) => s.status === "encerrada" && s.audience === "todos_pacientes").length > 0 && (
+            {/* Replays */}
+            {liveSessions_top.filter((s) => s.status === "encerrada" && s.audience === "todos_pacientes" && s.replayAvailable).length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">Lives Encerradas</h3>
-                {liveSessions_top.filter((s) => s.status === "encerrada" && s.audience === "todos_pacientes").sort((a, b) => (b.endedAt || "").localeCompare(a.endedAt || "")).slice(0, 5).map((live) => (
-                  <div key={live.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 opacity-70">
-                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                      <Video className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground text-sm">{live.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {live.doctorName} • Encerrada {live.endedAt && format(new Date(live.endedAt), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                        {" "}• {live.chatMessages.length} msgs
-                      </p>
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Encerrada</span>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <RotateCcw className="h-4 w-4 text-primary" /> Replays Disponíveis
+                </h3>
+                {liveSessions_top.filter((s) => s.status === "encerrada" && s.audience === "todos_pacientes" && s.replayAvailable).sort((a, b) => (b.endedAt || "").localeCompare(a.endedAt || "")).map((live) => (
+                  <div key={live.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+                    <button onClick={() => setViewingReplay(viewingReplay === live.id ? null : live.id)}
+                      className="w-full p-4 flex items-center gap-4 hover:bg-accent/30 transition-colors text-left">
+                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Play className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground text-sm">{live.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {live.doctorName} • {live.endedAt && format(new Date(live.endedAt), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                          {" "}• {live.chatMessages.filter((m) => m.type !== "system" && m.type !== "bot").length} msgs
+                        </p>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Replay</span>
+                      <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${viewingReplay === live.id ? "rotate-90" : ""}`} />
+                    </button>
+                    {viewingReplay === live.id && (
+                      <>
+                        <div className="bg-foreground/95 aspect-video flex items-center justify-center relative">
+                          <div className="text-center text-primary-foreground/80">
+                            <Video className="h-12 w-12 mx-auto mb-2 opacity-40" />
+                            <p className="text-sm">Replay: {live.title}</p>
+                          </div>
+                          <div className="absolute top-4 left-4 flex items-center gap-2 bg-primary/90 text-primary-foreground px-3 py-1 rounded-full text-xs font-bold">
+                            <RotateCcw className="h-3 w-3" /> REPLAY
+                          </div>
+                        </div>
+                        <div className="border-t border-border/50 p-3">
+                          <p className="text-xs font-semibold text-foreground mb-2">Chat da gravação:</p>
+                          <div className="max-h-40 overflow-y-auto space-y-1.5">
+                            {live.chatMessages.filter((m) => m.type !== "bot" || !m.message.includes("⚠️")).map((msg) => (
+                              <div key={msg.id} className="text-xs">
+                                {msg.type === "system" ? (
+                                  <span className="text-muted-foreground italic">{msg.message}</span>
+                                ) : (
+                                  <span><strong className={msg.senderRole === "doctor" ? "text-primary" : "text-foreground"}>{msg.senderName}:</strong> {msg.message}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2768,8 +2885,8 @@ export default function PatientPortalPage() {
               </div>
             )}
 
-            {/* Empty state */}
-            {!hasActiveLiveForPatients_top && liveSessions_top.filter((s) => (s.status === "agendada" || s.status === "encerrada") && s.audience === "todos_pacientes").length === 0 && liveNotifications_top.filter((n) => n.targetType === "patients").length === 0 && (
+            {/* Empty */}
+            {!hasActiveLiveForPatients_top && liveSessions_top.filter((s) => (s.status === "agendada" || (s.status === "encerrada" && s.replayAvailable)) && s.audience === "todos_pacientes").length === 0 && liveNotifications_top.filter((n) => n.targetType === "patients").length === 0 && (
               <div className="bg-card border border-border rounded-2xl p-12 text-center">
                 <Radio className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-muted-foreground font-medium">Nenhuma live no momento</p>

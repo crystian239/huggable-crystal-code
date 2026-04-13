@@ -4,9 +4,10 @@ import { useLiveStore } from "@/data/liveStore";
 import { useAuthStore } from "@/data/authStore";
 import { useClinicStore } from "@/data/clinicStore";
 import { Button } from "@/components/ui/button";
+import EmojiPicker from "@/components/EmojiPicker";
 import {
   Radio, Video, Calendar, Clock, Users, Send, Trash2, Play, Square, Plus, X,
-  MessageCircle, Sparkles, Eye, Hand, Check, XCircle, Smile
+  MessageCircle, Sparkles, Eye, Hand, Check, XCircle, Smile, RotateCcw, Shield, AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -22,8 +23,9 @@ export default function LivePage() {
   const store = useLiveStore();
   const {
     sessions, notifications, createSession, startLive, endLive, deleteSession,
-    addChatMessage, markAllNotificationsRead, addNotification,
+    addChatMessage, addModeratedMessage, markAllNotificationsRead, addNotification,
     addViewer, removeViewer, requestToJoin, respondJoinRequest, addEmojiReaction,
+    toggleReplay,
   } = store;
 
   const [showCreate, setShowCreate] = useState(false);
@@ -39,6 +41,8 @@ export default function LivePage() {
   const [showViewers, setShowViewers] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string; x: number }[]>([]);
+  const [showFilteredMsgs, setShowFilteredMsgs] = useState(false);
+  const [showReplayModal, setShowReplayModal] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const prevMsgCountRef = useRef(0);
   const prevJoinReqCountRef = useRef(0);
@@ -164,6 +168,7 @@ export default function LivePage() {
   const handleEndLive = (id: string) => {
     endLive(id);
     setViewingLive(null);
+    setShowReplayModal(id);
     toast.success("Live encerrada.");
   };
 
@@ -174,7 +179,10 @@ export default function LivePage() {
 
   const handleSendChat = (liveId: string) => {
     if (!chatMsg.trim()) return;
-    addChatMessage(liveId, { liveId, senderName: doctorName, senderRole: isDoctor ? "doctor" : "patient", message: chatMsg.trim() });
+    const result = addModeratedMessage(liveId, { liveId, senderName: doctorName, senderRole: isDoctor ? "doctor" : "patient", message: chatMsg.trim() });
+    if (!result.sent && result.warning) {
+      toast.warning("Mensagem bloqueada pelo moderador.");
+    }
     setChatMsg("");
   };
 
@@ -338,7 +346,28 @@ export default function LivePage() {
               <MessageCircle className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">Chat da Live</span>
               <span className="text-xs text-muted-foreground">({currentLive.chatMessages.length})</span>
+              {isOwner && (currentLive.filteredMessages?.length || 0) > 0 && (
+                <button onClick={() => setShowFilteredMsgs(!showFilteredMsgs)}
+                  className="ml-auto flex items-center gap-1 text-xs text-destructive hover:underline">
+                  <Shield className="h-3 w-3" /> {currentLive.filteredMessages.length} bloqueada(s)
+                </button>
+              )}
             </div>
+
+            {/* Filtered messages (doctor only) */}
+            {showFilteredMsgs && isOwner && (currentLive.filteredMessages?.length || 0) > 0 && (
+              <div className="p-3 bg-destructive/5 border-b border-destructive/20 space-y-2 max-h-32 overflow-y-auto">
+                <p className="text-xs font-semibold text-destructive flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Mensagens filtradas:</p>
+                {currentLive.filteredMessages.map((fm) => (
+                  <div key={fm.id} className="text-xs bg-card rounded-lg px-2 py-1.5">
+                    <span className="font-medium text-foreground">{fm.senderName}:</span>{" "}
+                    <span className="text-muted-foreground line-through">{fm.originalMessage}</span>
+                    <span className="text-destructive ml-2 text-[10px]">({fm.reason})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="h-60 overflow-y-auto p-3 space-y-2">
               {currentLive.chatMessages.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-8">Nenhuma mensagem ainda...</p>
@@ -350,6 +379,16 @@ export default function LivePage() {
                       <span className="text-[11px] text-muted-foreground bg-secondary/70 px-3 py-1 rounded-full">
                         {msg.message}
                       </span>
+                    </div>
+                  );
+                }
+                if (msg.type === "bot") {
+                  return (
+                    <div key={msg.id} className="flex justify-start">
+                      <div className="max-w-[85%] px-3 py-2 rounded-xl text-sm bg-accent/50 border border-accent/30 text-foreground">
+                        <p className="text-[10px] font-bold opacity-70">🤖 {msg.senderName}</p>
+                        <p>{msg.message}</p>
+                      </div>
                     </div>
                   );
                 }
@@ -371,19 +410,46 @@ export default function LivePage() {
               })}
               <div ref={chatEndRef} />
             </div>
-            <div className="p-3 border-t border-border/50 flex gap-2">
+            <div className="p-3 border-t border-border/50 flex gap-2 items-center">
+              <EmojiPicker onSelect={(emoji) => setChatMsg((prev) => prev + emoji)} />
               <input
                 value={chatMsg}
                 onChange={(e) => setChatMsg(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSendChat(currentLive.id)}
-                placeholder="Enviar mensagem..."
+                placeholder={isOwner ? "Mensagem ou /link /divulgar /aviso /msg..." : "Enviar mensagem..."}
                 className="flex-1 px-3 py-2 bg-background border border-input rounded-lg text-sm outline-none focus:ring-2 focus:ring-ring"
               />
               <Button size="sm" onClick={() => handleSendChat(currentLive.id)}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            {isOwner && (
+              <div className="px-3 pb-2 text-[10px] text-muted-foreground">
+                💡 Comandos: <code>/link URL</code> • <code>/divulgar texto</code> • <code>/aviso texto</code> • <code>/msg texto</code>
+              </div>
+            )}
           </div>
+
+          {/* Replay modal after ending */}
+          {showReplayModal && (
+            <>
+              <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50" onClick={() => setShowReplayModal(null)} />
+              <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+                <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <RotateCcw className="h-5 w-5 text-primary" /> Disponibilizar Replay?
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Deseja que os pacientes possam assistir o replay desta live?</p>
+                  <div className="flex gap-3 justify-end">
+                    <Button variant="outline" onClick={() => setShowReplayModal(null)}>Não, por enquanto</Button>
+                    <Button onClick={() => { toggleReplay(showReplayModal); setShowReplayModal(null); toast.success("Replay disponibilizado!"); }}>
+                      Sim, disponibilizar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </DashboardLayout>
     );
@@ -500,8 +566,8 @@ export default function LivePage() {
         {pastLives.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-sm font-semibold text-foreground">Últimas Lives</h2>
-            {pastLives.slice(0, 5).map((live) => (
-              <div key={live.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 opacity-70">
+            {pastLives.slice(0, 10).map((live) => (
+              <div key={live.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                 <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                   <Video className="h-5 w-5 text-muted-foreground" />
                 </div>
@@ -513,9 +579,25 @@ export default function LivePage() {
                     {" "}• {live.chatMessages.length} msgs
                   </p>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => deleteSession(live.id)}>
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {live.doctorId === doctorId && (
+                    <Button size="sm" variant={live.replayAvailable ? "default" : "outline"}
+                      onClick={() => { toggleReplay(live.id); toast.success(live.replayAvailable ? "Replay removido" : "Replay disponibilizado!"); }}
+                      className="gap-1 text-xs">
+                      <RotateCcw className="h-3 w-3" />
+                      {live.replayAvailable ? "Replay ✓" : "Liberar Replay"}
+                    </Button>
+                  )}
+                  {!live.replayAvailable && live.doctorId !== doctorId && (
+                    <span className="text-[10px] text-muted-foreground">Sem replay</span>
+                  )}
+                  {live.replayAvailable && live.doctorId !== doctorId && (
+                    <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full">Replay disponível</span>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => deleteSession(live.id)}>
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

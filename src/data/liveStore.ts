@@ -18,6 +18,10 @@ export interface LiveSession {
   viewers: LiveViewer[];
   joinRequests: LiveJoinRequest[];
   emojiReactions: LiveEmojiReaction[];
+  // Replay
+  replayAvailable: boolean;
+  // Moderation
+  filteredMessages: LiveFilteredMessage[];
 }
 
 export interface LiveChatMessage {
@@ -27,7 +31,7 @@ export interface LiveChatMessage {
   senderRole: "doctor" | "patient";
   message: string;
   timestamp: string;
-  type?: "message" | "system"; // system = join/leave msgs
+  type?: "message" | "system" | "bot";
 }
 
 export interface LiveViewer {
@@ -52,6 +56,14 @@ export interface LiveEmojiReaction {
   timestamp: string;
 }
 
+export interface LiveFilteredMessage {
+  id: string;
+  originalMessage: string;
+  senderName: string;
+  reason: string;
+  timestamp: string;
+}
+
 export interface LiveNotification {
   id: string;
   liveId: string;
@@ -64,30 +76,64 @@ export interface LiveNotification {
   targetIds?: string[];
 }
 
+// Bad words filter (Portuguese)
+const BAD_WORDS = [
+  "idiota", "burro", "burra", "imbecil", "otário", "otaria", "babaca", "lixo",
+  "merda", "porra", "caralho", "foda", "fdp", "puta", "vagabundo", "vagabunda",
+  "cuzão", "viado", "desgraça", "desgraçado", "desgraçada", "arrombado", "arrombada",
+  "corno", "piranha", "vadia", "maldito", "maldita", "inútil", "bosta",
+];
+
+export function moderateMessage(text: string): { clean: boolean; reason?: string } {
+  const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const word of BAD_WORDS) {
+    const normalized = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (lower.includes(normalized)) {
+      return { clean: false, reason: `Mensagem contém linguagem inadequada ("${word}")` };
+    }
+  }
+  return { clean: true };
+}
+
+// Bot commands: doctor sends /comando <args>
+export function parseBotCommand(text: string): { isCommand: boolean; command?: string; args?: string } {
+  const match = text.match(/^\/(link|divulgar|aviso|msg)\s+(.*)/i);
+  if (match) return { isCommand: true, command: match[1].toLowerCase(), args: match[2] };
+  return { isCommand: false };
+}
+
+function formatBotResponse(command: string, args: string, doctorName: string): string {
+  switch (command) {
+    case "link": return `🔗 Link compartilhado por ${doctorName}: ${args}`;
+    case "divulgar": return `📢 ${doctorName} divulga: ${args}`;
+    case "aviso": return `⚠️ Aviso de ${doctorName}: ${args}`;
+    case "msg": return `💬 ${doctorName}: ${args}`;
+    default: return args;
+  }
+}
+
 interface LiveStore {
   sessions: LiveSession[];
   notifications: LiveNotification[];
 
-  createSession: (s: Omit<LiveSession, "id" | "createdAt" | "chatMessages" | "viewers" | "joinRequests" | "emojiReactions">) => string;
+  createSession: (s: Omit<LiveSession, "id" | "createdAt" | "chatMessages" | "viewers" | "joinRequests" | "emojiReactions" | "replayAvailable" | "filteredMessages">) => string;
   updateSession: (id: string, updates: Partial<LiveSession>) => void;
   startLive: (id: string) => void;
   endLive: (id: string) => void;
   deleteSession: (id: string) => void;
+  toggleReplay: (id: string) => void;
 
   addChatMessage: (liveId: string, msg: Omit<LiveChatMessage, "id" | "timestamp">) => void;
+  addModeratedMessage: (liveId: string, msg: Omit<LiveChatMessage, "id" | "timestamp">) => { sent: boolean; warning?: string };
 
-  // Viewers
   addViewer: (liveId: string, viewer: Omit<LiveViewer, "id" | "joinedAt">) => void;
   removeViewer: (liveId: string, viewerName: string) => void;
 
-  // Join requests
   requestToJoin: (liveId: string, req: { name: string; role: "doctor" | "patient" }) => void;
   respondJoinRequest: (liveId: string, requestId: string, accepted: boolean) => void;
 
-  // Emoji
   addEmojiReaction: (liveId: string, emoji: string, senderName: string) => void;
 
-  // Notifications
   addNotification: (n: Omit<LiveNotification, "id">) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (targetType: "patients" | "doctors") => void;
@@ -107,7 +153,7 @@ export const useLiveStore = create<LiveStore>()(
       createSession: (s) => {
         const id = uid();
         set((state) => ({
-          sessions: [...state.sessions, { ...s, id, createdAt: new Date().toISOString(), chatMessages: [], viewers: [], joinRequests: [], emojiReactions: [] }],
+          sessions: [...state.sessions, { ...s, id, createdAt: new Date().toISOString(), chatMessages: [], viewers: [], joinRequests: [], emojiReactions: [], replayAvailable: false, filteredMessages: [] }],
         }));
         return id;
       },
@@ -157,6 +203,13 @@ export const useLiveStore = create<LiveStore>()(
           notifications: state.notifications.filter((n) => n.liveId !== id),
         })),
 
+      toggleReplay: (id) =>
+        set((state) => ({
+          sessions: state.sessions.map((s) =>
+            s.id === id ? { ...s, replayAvailable: !s.replayAvailable } : s
+          ),
+        })),
+
       addChatMessage: (liveId, msg) =>
         set((state) => ({
           sessions: state.sessions.map((s) =>
@@ -165,6 +218,61 @@ export const useLiveStore = create<LiveStore>()(
               : s
           ),
         })),
+
+      addModeratedMessage: (liveId, msg) => {
+        const modResult = moderateMessage(msg.message);
+        if (!modResult.clean) {
+          // Store filtered message for doctor to see
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === liveId
+                ? {
+                    ...s,
+                    filteredMessages: [...(s.filteredMessages || []), {
+                      id: uid(),
+                      originalMessage: msg.message,
+                      senderName: msg.senderName,
+                      reason: modResult.reason!,
+                      timestamp: new Date().toISOString(),
+                    }],
+                    chatMessages: [...s.chatMessages, {
+                      id: uid(), liveId, senderName: "🤖 Moderador", senderRole: "doctor" as const,
+                      message: `⚠️ ${msg.senderName}, mantenha uma postura respeitosa. Mensagens inadequadas não são permitidas.`,
+                      timestamp: new Date().toISOString(), type: "bot" as const,
+                    }],
+                  }
+                : s
+            ),
+          }));
+          return { sent: false, warning: modResult.reason };
+        }
+
+        // Check for bot commands (doctor only)
+        if (msg.senderRole === "doctor") {
+          const cmd = parseBotCommand(msg.message);
+          if (cmd.isCommand && cmd.command && cmd.args) {
+            const botMsg = formatBotResponse(cmd.command, cmd.args, msg.senderName);
+            set((state) => ({
+              sessions: state.sessions.map((s) =>
+                s.id === liveId
+                  ? {
+                      ...s,
+                      chatMessages: [...s.chatMessages, {
+                        id: uid(), liveId, senderName: "🤖 Assistente", senderRole: "doctor" as const,
+                        message: botMsg, timestamp: new Date().toISOString(), type: "bot" as const,
+                      }],
+                    }
+                  : s
+              ),
+            }));
+            return { sent: true };
+          }
+        }
+
+        // Normal message
+        get().addChatMessage(liveId, msg);
+        return { sent: true };
+      },
 
       addViewer: (liveId, viewer) =>
         set((state) => ({
