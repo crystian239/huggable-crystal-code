@@ -325,7 +325,7 @@ export default function LivePage() {
               </Button>
             )}
             {!isOwner && currentLive.joinRequests.some((r) => r.name === doctorName && r.status === "pending") && (
-              <span className="ml-auto text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full">⏳ Aguardando aprovação</span>
+              <span className="ml-auto text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">⏳ Aguardando aprovação</span>
             )}
             {!isOwner && currentLive.joinRequests.some((r) => r.name === doctorName && r.status === "accepted") && (
               <span className="ml-auto text-xs text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">✅ Participando</span>
