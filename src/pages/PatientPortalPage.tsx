@@ -493,7 +493,11 @@ export default function PatientPortalPage() {
   // Live store hooks (must be before early returns)
   const liveSessions_top = useLiveStore((s) => s.sessions);
   const liveNotifications_top = useLiveStore((s) => s.notifications);
-  const liveAddChatMessage = useLiveStore((s) => s.addChatMessage);
+  const liveAddModeratedMessage = useLiveStore((s) => s.addModeratedMessage);
+  const liveAddViewer = useLiveStore((s) => s.addViewer);
+  const liveRemoveViewer = useLiveStore((s) => s.removeViewer);
+  const liveAddEmojiReaction = useLiveStore((s) => s.addEmojiReaction);
+  const liveRequestToJoin = useLiveStore((s) => s.requestToJoin);
   const liveMarkAllRead = useLiveStore((s) => s.markAllNotificationsRead);
   const hasActiveLiveForPatients_top = useMemo(() => liveSessions_top.some((s) => s.status === "ao_vivo" && s.audience === "todos_pacientes"), [liveSessions_top]);
   const liveNotifCount_top = useMemo(() => {
@@ -502,6 +506,8 @@ export default function PatientPortalPage() {
   }, [liveNotifications_top, hasActiveLiveForPatients_top]);
   const [liveChatMsg_top, setLiveChatMsg_top] = useState("");
   const [expandedLiveId, setExpandedLiveId] = useState<string | null>(null);
+  const [liveFloatingEmojis, setLiveFloatingEmojis] = useState<{ id: string; emoji: string; x: number }[]>([]);
+  const [viewingReplay, setViewingReplay] = useState<string | null>(null);
 
   const galleryPhotos = useGalleryStore((s) => s.photos);
   const { setOnline: setPresenceOnline, setOffline: setPresenceOffline, getPresence: getChatPresence } = useChatPresenceStore();
