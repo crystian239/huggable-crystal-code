@@ -4,9 +4,10 @@ import { useLiveStore } from "@/data/liveStore";
 import { useAuthStore } from "@/data/authStore";
 import { useClinicStore } from "@/data/clinicStore";
 import { Button } from "@/components/ui/button";
+import EmojiPicker from "@/components/EmojiPicker";
 import {
   Radio, Video, Calendar, Clock, Users, Send, Trash2, Play, Square, Plus, X,
-  MessageCircle, Sparkles, Eye, Hand, Check, XCircle, Smile
+  MessageCircle, Sparkles, Eye, Hand, Check, XCircle, Smile, RotateCcw, Shield, AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -22,8 +23,9 @@ export default function LivePage() {
   const store = useLiveStore();
   const {
     sessions, notifications, createSession, startLive, endLive, deleteSession,
-    addChatMessage, markAllNotificationsRead, addNotification,
+    addChatMessage, addModeratedMessage, markAllNotificationsRead, addNotification,
     addViewer, removeViewer, requestToJoin, respondJoinRequest, addEmojiReaction,
+    toggleReplay,
   } = store;
 
   const [showCreate, setShowCreate] = useState(false);
