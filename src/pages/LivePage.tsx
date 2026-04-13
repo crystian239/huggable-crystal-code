@@ -41,6 +41,8 @@ export default function LivePage() {
   const [showViewers, setShowViewers] = useState(false);
   const [showEmojis, setShowEmojis] = useState(false);
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string; x: number }[]>([]);
+  const [showFilteredMsgs, setShowFilteredMsgs] = useState(false);
+  const [showReplayModal, setShowReplayModal] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const prevMsgCountRef = useRef(0);
   const prevJoinReqCountRef = useRef(0);
