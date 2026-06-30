@@ -15,6 +15,8 @@ import simboloPsicologia from "@/assets/simbolo-psicologia.jpg";
 import profFono from "@/assets/profissional-fono.jpg";
 import profPsico from "@/assets/profissional-psico.jpg";
 import { checkRateLimit, resetRateLimit, validateCPF, formatCPF, sanitizeInput } from "@/lib/security";
+import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 import { maskPhone } from "@/lib/masks";
 import { useNotificationSounds } from "@/hooks/useNotificationSounds";
 import { useIncomingCallRingtone } from "@/hooks/useIncomingCallRingtone";
