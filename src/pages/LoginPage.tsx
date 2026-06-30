@@ -7,6 +7,8 @@ import clinicLogo from "@/assets/clinic-logo.png";
 import { useClinicStore } from "@/data/clinicStore";
 import { useAuthStore } from "@/data/authStore";
 import { checkRateLimit, resetRateLimit, sanitizeInput } from "@/lib/security";
+import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 
 function formatCPF(value: string) {
   const digits = value.replace(/\D/g, "").slice(0, 11);
