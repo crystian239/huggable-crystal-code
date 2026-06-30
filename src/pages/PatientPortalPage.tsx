@@ -1324,6 +1324,12 @@ export default function PatientPortalPage() {
                               avatar: (data.user?.user_metadata?.avatar_url as string) || "",
                             });
                           }
+                          const acc = existing || { cpf: "" };
+                          if (!acc.cpf || acc.cpf.trim() === "") {
+                            setGoogleCpfInput("");
+                            setGoogleCpfModal({ accountId, name });
+                            return;
+                          }
                           sessionStorage.setItem("patient-auth", accountId);
                           setLoggedIn(accountId);
                           toast.success(`Bem-vindo, ${name}!`);
