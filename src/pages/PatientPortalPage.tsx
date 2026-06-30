@@ -1337,8 +1337,8 @@ export default function PatientPortalPage() {
                           <span className="bg-background px-2 text-muted-foreground">ou</span>
                         </div>
                       </div>
-                      {view === "login" ? (
-                        <>
+                      <>
+
                           <div>
                             <label className="text-sm font-medium text-foreground mb-1 block">CPF ou Usuário</label>
                             <input type="text" value={loginForm.cpf} onChange={(e) => {
