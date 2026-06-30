@@ -408,6 +408,8 @@ export default function PatientPortalPage() {
   const [payModal, setPayModal] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<"pix" | "cartao">("pix");
   const [payStep, setPayStep] = useState<"choose" | "details" | "processing" | "done">("choose");
+  const [googleCpfModal, setGoogleCpfModal] = useState<null | { accountId: string; name: string }>(null);
+  const [googleCpfInput, setGoogleCpfInput] = useState("");
   const [cardForm, setCardForm] = useState({ number: "", name: "", expiry: "", cvv: "" });
   const [pixKey] = useState(() => {
     const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
